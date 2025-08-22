@@ -156,7 +156,7 @@ def main():
 
             # add sst to the dataset
             sst = get_era5_sst(Files['e5_Ex'])
-            ai_Ex['sst'] = sst.expand_dims(time=dt)
+            ai_Ex['sst'] = sst.expand_dims(time=[dt])
   
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
