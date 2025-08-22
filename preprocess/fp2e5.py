@@ -13,8 +13,10 @@ def get_era5_lsm():
     lsm = ds['lsm'].squeeze(drop=True).drop_vars(['expver', 'number']).astype('float32')
     return lsm
 
-def get_era5_sst():
-    return
+def get_era5_sst(file=None):
+    ds = xr.open_dataset(file, engine='netcdf4')
+    sst = ds['sst'].squeeze(drop=True).drop_vars(['expver', 'number']).astype('float32')
+    return sst
 
 def expand_dims(ds, steps):
     # Expand the time dimension of the dataset
@@ -137,6 +139,9 @@ def main():
         for dt in dates:
             Files = discover_files(dt, outdir=outdir, expid=expid)
             print(Files)
+            sst = get_era5_sst(Files['e5_Ex'])
+            print(sst)
+            exit()
 
             fp_Nx = xr.open_dataset(Files['fp_Nx'], engine='netcdf4')
             fp_Nv = xr.open_dataset(Files['fp_Nv'], engine='netcdf4')
@@ -148,6 +153,10 @@ def main():
                 regridder = xe.Regridder(ai_Nx, ai_Ex, "conservative")
             
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
+
+            # add sst to the dataset
+            sst = get_era5_sst(Files['e5_Ex'])
+            ai_Ex['sst'] = sst    
 
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
