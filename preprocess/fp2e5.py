@@ -136,6 +136,7 @@ def main():
         daily_Ex = []
         daily_Ep = []
         for dt in dates:
+            print(dt)
             Files = discover_files(dt, outdir=outdir, expid=expid)
             print(Files)
             sst = get_era5_sst(Files['e5_Ex'])
@@ -164,6 +165,8 @@ def main():
         # concat along time
         ai_Ex_day = xr.concat(daily_Ex, dim="time")
         ai_Ep_day = xr.concat(daily_Ep, dim="time")
+        print(ai_Ex_day)
+        exit()
 
         # add the lsm 
         lsm = get_era5_lsm()        
