@@ -129,8 +129,6 @@ def main():
 
     dates = pd.date_range(start=args.start_date, 
                           end=pd.to_datetime(args.end_date) + pd.Timedelta(hours=23), freq='12h')
-    print(dates)
-    exit()
 
 
     outdir = args.outdir
