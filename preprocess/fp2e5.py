@@ -13,7 +13,7 @@ def main():
     parser.add_argument('--end_date', type=str, required=True, help='End date to process (YYYY-MM-DD)')
     
     parser.add_argument('--outdir', type=str, default='./output/', help='Output directory for the converted files')
-    parser.add_argument('--expid', type=str, default='fp2e5', help='Experiment ID for the output files')
+    parser.add_argument('--expid', type=str, default='f5295', help='Experiment ID for the output files')
 
     args = parser.parse_args()
 
