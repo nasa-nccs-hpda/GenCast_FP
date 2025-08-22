@@ -44,10 +44,6 @@ def main():
             
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
 
-            # add time dimension
-            ai_Ex = ai_Ex.expand_dims(time=[dt])
-            ai_Ep = ai_Ep.expand_dims(time=[dt])
-
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
         
