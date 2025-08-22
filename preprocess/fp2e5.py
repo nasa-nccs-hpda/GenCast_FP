@@ -79,7 +79,6 @@ def to_gencast_input(ds):
     
     # coarsen the data & reverse the latitude
     ds = ds.isel(latitude=slice(None, None, -4), longitude=slice(None, None, 4)).compute()
-    res=1.0
 
     ds = ds.drop_vars(["hgt", "p", "sp", "skt"])
     # change variable names
@@ -89,6 +88,8 @@ def to_gencast_input(ds):
     ds = ds.astype({var: 'float32' for var in ds.data_vars})
 
     # expand the time dimension
+    lsm = ds['land_sea_mask']
+    ds = ds.drop_vars(['land_sea_mask'])
     ds = expand_dims(ds, nsteps)
 
     ds = ds.assign_coords(datetime=ds["time"])
@@ -109,6 +110,7 @@ def to_gencast_input(ds):
 
     # drop the time dimension for geopotential_at_surface
     ds['geopotential_at_surface'] = ds['geopotential_at_surface'].isel(time=0).drop_vars(["time"])
+    ds['land_sea_mask'] = lsm
 
     return ds
 
