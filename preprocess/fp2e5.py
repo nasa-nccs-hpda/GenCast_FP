@@ -127,7 +127,10 @@ def main():
 
     os.makedirs(args.outdir, exist_ok=True)
 
-    dates = pd.date_range(start=args.start_date, end=args.end_date, freq='12H')
+    dates = pd.date_range(start=args.start_date, 
+                          end=pd.to_datetime(args.end_dat) + pd.Timedelta(hours=23), freq='12h')
+    print(dates)
+    exit()
 
 
     outdir = args.outdir
