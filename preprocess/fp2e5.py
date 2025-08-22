@@ -10,7 +10,7 @@ import argparse
 def get_era5_lsm():
     lsm_file  = '/css/era5/static/era5_static-allvar.nc'
     ds = xr.open_dataset(lsm_file, engine='netcdf4')
-    lsm = ds['land_sea_mask'].squeeze(drop=True).drop_vars(['expver', 'number']).astype('float32')
+    lsm = ds['lsm'].squeeze(drop=True).drop_vars(['expver', 'number']).astype('float32')
     return lsm
 
 def get_era5_sst():
