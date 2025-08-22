@@ -171,8 +171,10 @@ def main():
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
 
         ds_out = to_gencast_input(ai_day)
-        print(ds_out)
-        exit()
+        # save to netcdf
+        date_str = dt.strftime('%Y-%m-%d')
+        out_file = f"{outdir}/gencast-dataset-source-geos_date-{date_str}_res-1.0_levels-13_steps-20.nc"
+        ds_out.to_netcdf(out_file, mode='w', format='NETCDF4', engine='netcdf4')
 
 
 if __name__ == "__main__":
