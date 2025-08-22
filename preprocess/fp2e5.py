@@ -17,7 +17,7 @@ def main():
 
     args = parser.parse_args()
 
-    dates = pd.date_range(start=args.start_date, end=args.end_date, freq='12')
+    dates = pd.date_range(start=args.start_date, end=args.end_date, freq='12H')
 
 
     outdir = args.outdir
