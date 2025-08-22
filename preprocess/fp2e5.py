@@ -160,7 +160,7 @@ def main():
         # add the lsm 
         lsm = get_era5_lsm()        
         # merge into single dataset for the day
-        ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset(name='land_sea_mask')])
+        ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
         print((ai_day))
         exit()
 
