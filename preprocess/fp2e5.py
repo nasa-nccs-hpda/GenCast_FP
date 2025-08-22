@@ -32,7 +32,6 @@ def expand_dims(ds, steps):
     return ds_extended
 
 def to_gencast_input(ds):
-    date_str = None
     nsteps = 22 
     GRAV = 9.80665
 
@@ -72,6 +71,8 @@ def to_gencast_input(ds):
                     "msl": "mean_sea_level_pressure",
                     "tp": "total_precipitation_12hr",
                     "zs": "geopotential_at_surface",
+                    "sst": "sea_surface_temperature",
+                    "lsm": "land_sea_mask",
                     "latitude": "lat",
                     "longitude": "lon",
                     "pressure_level": "level",
@@ -100,15 +101,14 @@ def to_gencast_input(ds):
     # change time coordinate to timedelta
     ds['time']=ds['time']-ds['time'].isel(time=0)
 
-    # add land_sea_mask
-    file = f"/discover/nobackup/projects/QEFM/data/FMGenCast/12hr/Y2024/gencast-dataset-source-era5_date-{date_str}_res-1.0_levels-13_steps-20.nc"
-    ds_lsm = xr.open_dataset(file)
-    ds['land_sea_mask'] = ds_lsm['land_sea_mask']
-    # using the sea_surface_temperature from the original dataset
-    ds['sea_surface_temperature'] = ds_lsm['sea_surface_temperature']
+    # # add land_sea_mask
+    # file = f"/discover/nobackup/projects/QEFM/data/FMGenCast/12hr/Y2024/gencast-dataset-source-era5_date-{date_str}_res-1.0_levels-13_steps-20.nc"
+    # ds_lsm = xr.open_dataset(file)
+    # ds['land_sea_mask'] = ds_lsm['land_sea_mask']
+    # # using the sea_surface_temperature from the original dataset
+    # ds['sea_surface_temperature'] = ds_lsm['sea_surface_temperature']
 
-    # drop the time dimension for land_sea_mask and geopotential_at_surface
-    #ds['land_sea_mask'] = ds['land_sea_mask'].isel(time=0).drop_vars("time")
+    # drop the time dimension for geopotential_at_surface
     ds['geopotential_at_surface'] = ds['geopotential_at_surface'].isel(time=0).drop_vars(["time"])
 
     return ds
@@ -170,7 +170,9 @@ def main():
         lsm = get_era5_lsm()        
         # merge into single dataset for the day
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
-        print((ai_day))
+
+        ds_out = to_gencast_input(ai_day)
+        print(ds_out)
         exit()
 
 
