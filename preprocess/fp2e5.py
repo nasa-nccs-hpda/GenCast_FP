@@ -152,8 +152,6 @@ def main():
             
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
 
-            print(ai_Ex)
-
             # add sst to the dataset
             sst = get_era5_sst(Files['e5_Ex'])
             ai_Ex['sst'] = sst.expand_dims(time=[dt])
@@ -165,8 +163,6 @@ def main():
         # concat along time
         ai_Ex_day = xr.concat(daily_Ex, dim="time")
         ai_Ep_day = xr.concat(daily_Ep, dim="time")
-        print(ai_Ex_day)
-        exit()
 
         # add the lsm 
         lsm = get_era5_lsm()        
