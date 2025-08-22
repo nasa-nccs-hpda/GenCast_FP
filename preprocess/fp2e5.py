@@ -26,7 +26,7 @@ def main():
     expid = args.expid
 
     regridder = None
-    for day, day_dates in dates.groupby(dates.date):
+    for _, dates in dates.groupby(dates.date).items():
         daily_Ex = []
         daily_Ep = []
         for dt in dates:
