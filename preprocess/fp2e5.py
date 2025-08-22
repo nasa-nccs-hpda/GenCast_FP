@@ -140,8 +140,6 @@ def main():
             Files = discover_files(dt, outdir=outdir, expid=expid)
             print(Files)
             sst = get_era5_sst(Files['e5_Ex'])
-            print(sst)
-            exit()
 
             fp_Nx = xr.open_dataset(Files['fp_Nx'], engine='netcdf4')
             fp_Nv = xr.open_dataset(Files['fp_Nv'], engine='netcdf4')
@@ -154,9 +152,13 @@ def main():
             
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
 
+            print(ai_Ex)
+
             # add sst to the dataset
             sst = get_era5_sst(Files['e5_Ex'])
-            ai_Ex['sst'] = sst    
+            ai_Ex['sst'] = sst
+            print(ai_Ex)
+            exit()    
 
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
