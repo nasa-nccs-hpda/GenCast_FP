@@ -12,8 +12,7 @@ WORKDIR='/discover/nobackup/jli30/GenCast_FP'
 module load anaconda
 source activate base
 cd ${WORKDIR}/preprocess
-python convert_GEOSFP_to_ERA5.py \
-    --output_dir ${WORKDIR}/output_test \
-#    --exp_id f5295 \
-    --start_date 2024-12-01 \
-    --end_date 2024-12-02
+python fp2e5.py \
+--outdir ${WORKDIR}/output_test \
+--start_date 2024-12-01 \
+--end_date 2024-12-02
