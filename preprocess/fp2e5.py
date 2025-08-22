@@ -7,6 +7,15 @@ import xesmf  as xe
 from fp_to_era5 import *
 import argparse
 
+def get_era5_lsm():
+    lsm_file  = '/css/era5/static/era5_static-allvar.nc'
+    ds = xr.open_dataset(lsm_file, engine='netcdf4')
+    lsm = ds['land_sea_mask'].squeeze(drop=True).drop_vars(['expver', 'number']).astype('float32')
+    return lsm
+
+def get_era5_sst():
+    return
+
 def expand_dims(ds, steps):
     # Expand the time dimension of the dataset
     orig_time = ds.time.values
@@ -140,10 +149,6 @@ def main():
             
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
 
-            e5_Ex = xr.open_dataset(Files['e5_Ex'], engine='netcdf4')
-            print(e5_Ex)
-            exit()
-
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
         
@@ -152,9 +157,12 @@ def main():
         ai_Ex_day = xr.concat(daily_Ex, dim="time")
         ai_Ep_day = xr.concat(daily_Ep, dim="time")
 
+        # add the lsm 
+        lsm = get_era5_lsm()        
         # merge into single dataset for the day
-        ai_day = xr.merge([ai_Ex_day, ai_Ep_day])
+        ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset(name='land_sea_mask')])
         print((ai_day))
+        exit()
 
 
 if __name__ == "__main__":
