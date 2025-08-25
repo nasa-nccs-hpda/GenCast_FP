@@ -5,7 +5,7 @@
 # Load necessary modules
 
 module load singularity
-container="/discover/nobackup/projects/QEFM/containers/qefm-core-gencast-20250507-sandbox"
+container="/discover/nobackup/projects/QEFM/containers/qefm-core-gencast-20250511-sandbox"
 
 # Define working directory and input files
 WORKDIR="/discover/nobackup/jli30/GenCast_FP/prediction/FMGenCast/graphcast"
