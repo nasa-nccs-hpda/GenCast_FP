@@ -15,34 +15,6 @@
 # > See the License for the specific language governing permissions and
 # > limitations under the License.
 
-# # GenCast Mini Demo
-# 
-# This notebook demonstrates running `GenCast 1p0deg Mini <2019`.
-# 
-# `GenCast 1p0deg Mini <2019` is a GenCast model at 1deg resolution, with 13 pressure levels and a 4 times refined icosahedral mesh. It is trained on ERA5 data from 1979 to 2018, and can be causally evaluated on 2019 and later years.
-# 
-# While other GenCast models are [available](https://github.com/google-deepmind/graphcast/blob/main/README.md), this model has the smallest memory footprint of those provided and is the only one runnable with the freely provided TPUv2-8 configuration in Colab. You can select this configuration in `Runtime>Change Runtime Type`.
-# 
-# **N.B.** The performance of `GenCast 1p0deg Mini <2019` is reasonable but is not representative of the performance of the other GenCast models described in the [README](https://github.com/google-deepmind/graphcast/blob/main/README.md).
-# 
-# To run the other models using Google Cloud Compute, refer to [gencast_demo_cloud_vm.ipynb](https://colab.research.google.com/github/deepmind/graphcast/blob/master/gencast_demo_cloud_vm.ipynb).
-
-# # Installation and Initialization
-
-print("\n====================================")
-print("---> chmod a+r -R /discover/nobackup/projects/QEFM/.local/")
-print("NOTE: GenCast dependencies:")
-print("---> RUN pip install --no-cache-dir --no-deps \ ")
-print("--->     tree_math \ ")
-print("--->     tensorstore \ ")
-print("--->     xarray_tensorstore")
-
-print("---> WORKDIR /app")
-print("--->     # Only do git clone once, already exists")
-print("--->     #RUN git clone --branch main https://github.com/neuralgcm/dinosaur.git")
-
-print("====================================\n")
-
 # @title Imports
 
 import dataclasses
@@ -51,9 +23,6 @@ import math
 from typing import Optional
 import haiku as hk
 import jax
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib import animation
 import numpy as np
 import xarray
 import argparse
@@ -69,7 +38,7 @@ from graphcast import denoiser
 from graphcast import nan_cleaning
 import os
 
-parser = argparse.ArgumentParser(description='GenCast Mini Demo')
+parser = argparse.ArgumentParser(description='GenCast Mini Prediction')
 parser.add_argument('--date', '-s', type=str, default='2024-12-12', help='Date to forecast')
 args = parser.parse_args()
 date_str = args.date
@@ -77,6 +46,8 @@ print("date_str:\n", date_str, "\n")
 
 script_dir = os.path.dirname(os.path.abspath(__name__))
 print("script_dir:\n", script_dir, "\n")
+
+exit()
 
 dir_prefix = "gencast/"
 
@@ -107,7 +78,6 @@ def update_latent_options(*args):
 
 
 # @title Load the model
-# GST
 source = "Checkpoint"
 if source == "Random":
   params = None  # Filled in below
