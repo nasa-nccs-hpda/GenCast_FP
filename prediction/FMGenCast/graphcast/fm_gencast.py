@@ -47,9 +47,7 @@ print("date_str:\n", date_str, "\n")
 script_dir = os.path.dirname(os.path.abspath(__name__))
 print("script_dir:\n", script_dir, "\n")
 
-exit()
-
-dir_prefix = "gencast/"
+#dir_prefix = "gencast/"
 
 latent_value_options = [int(2**i) for i in range(4, 10)]
 
@@ -101,7 +99,7 @@ if source == "Random":
 else:
   assert source == "Checkpoint"
   params_file_value = "GenCast 1p0deg Mini <2019.npz"
-  relative_params_file = '../../../checkpoints/gencast/gencast-params-GenCast_1p0deg_Mini_<2019.npz'
+  relative_params_file = '../../checkpoints/gencast/gencast-params-GenCast_1p0deg_Mini_<2019.npz'
   absolute_path = os.path.join(script_dir, relative_params_file)
   print("absolute_path:\n", absolute_path, "\n")
   params_file = absolute_path
@@ -122,6 +120,7 @@ else:
 
   print("Model description:\n", ckpt.description, "\n")
   print("Model license:\n", ckpt.license, "\n")
+  exit()
 
 
 # ## Load the example data
