@@ -142,12 +142,7 @@ def data_valid_for_model(file_name: str, params_file_name: str):
   return res_matches and source_matches
 
 # @title Load weather data
-# dataset_file_value= "source-era5_date-2019-03-29_res-1.0_levels-13_steps-01.nc"
-#dataset_file_value = "/discover/nobackup/projects/QEFM/qefm-core/qefm/models/checkpoints/gencast/gencast-dataset-source-era5_date-2019-03-29_res-1.0_levels-13_steps-01.nc"
-#dataset_file_value = "/discover/nobackup/jli30/QEFM/qefm-core/data/gencast-dataset-source-era5_date-2024-12-01_res-1.0_levels-13_steps-01.nc"
-#dataset_file_value = "/discover/nobackup/jli30/QEFM/qefm-core/data/gencast-dataset-source-era5_date-2024-12-01_res-1.0_levels-13_steps-10.nc"
-#dataset_dir = "/discover/nobackup/projects/QEFM/data/FMGenCast"
-#dataset_dir = "/discover/nobackup/projects/QEFM/data/FMGenCast/12hr/samples"
+
 dataset_dir = "/discover/nobackup/projects/QEFM/data/FMGenCast/12hr/Y2024"
 dataset_file_value = f"gencast-dataset-source-era5_date-{date_str}_res-1.0_levels-13_steps-20.nc"
 dataset_file = os.path.join(dataset_dir, dataset_file_value)
@@ -317,132 +312,9 @@ predictions.to_netcdf(out_file)
 print("Predictions computed for 10 days out_file:\n", out_file, "\n")
 
 
-# @title Choose predictions to plot
-
-# plot_pred_variable = widgets.Dropdown(
-#     options=predictions.data_vars.keys(),
-#     value="2m_temperature",
-#     description="Variable")
-# plot_pred_level = widgets.Dropdown(
-#     options=predictions.coords["level"].values,
-#     value=500,
-#     description="Level")
-# plot_pred_robust = widgets.Checkbox(value=True, description="Robust")
-# plot_pred_max_steps = widgets.IntSlider(
-#     min=1,
-#     max=predictions.dims["time"],
-#     value=predictions.dims["time"],
-#     description="Max steps")
-# plot_pred_samples = widgets.IntSlider(
-#     min=1,
-#     max=num_ensemble_members,
-#     value=num_ensemble_members,
-#     description="Samples")
-#
-# widgets.VBox([
-#     plot_pred_variable,
-#     plot_pred_level,
-#     plot_pred_robust,
-#     plot_pred_max_steps,
-#     plot_pred_samples,
-#     widgets.Label(value="Run the next cell to plot the predictions. Rerunning this cell clears your selection.")
-# ])
-
-# @title Plot prediction samples and diffs
-
-# plot_size = 5
-# plot_max_steps = min(predictions.dims["time"], plot_pred_max_steps.value)
-#
-# fig_title = plot_pred_variable.value
-# if "level" in predictions[plot_pred_variable.value].coords:
-#   fig_title += f" at {plot_pred_level.value} hPa"
-#
-# for sample_idx in range(plot_pred_samples.value):
-#   data = {
-#       "Targets": scale(select(eval_targets, plot_pred_variable.value, plot_pred_level.value, plot_max_steps), robust=plot_pred_robust.value),
-#       "Predictions": scale(select(predictions.isel(sample=sample_idx), plot_pred_variable.value, plot_pred_level.value, plot_max_steps), robust=plot_pred_robust.value),
-#       "Diff": scale((select(eval_targets, plot_pred_variable.value, plot_pred_level.value, plot_max_steps) -
-#                           select(predictions.isel(sample=sample_idx), plot_pred_variable.value, plot_pred_level.value, plot_max_steps)),
-#                         robust=plot_pred_robust.value, center=0),
-#   }
-#   display.display(plot_data(data, fig_title + f", Sample {sample_idx}", plot_size, plot_pred_robust.value))
 
 
-# @title Plot ensemble mean and CRPS
 
-def crps(targets, predictions, bias_corrected = True):
-  if predictions.sizes.get("sample", 1) < 2:
-    raise ValueError(
-        "predictions must have dim 'sample' with size at least 2.")
-  sum_dims = ["sample", "sample2"]
-  preds2 = predictions.rename({"sample": "sample2"})
-  num_samps = predictions.sizes["sample"]
-  num_samps2 = (num_samps - 1) if bias_corrected else num_samps
-  mean_abs_diff = np.abs(
-      predictions - preds2).sum(
-          dim=sum_dims, skipna=False) / (num_samps * num_samps2)
-  mean_abs_err = np.abs(targets - predictions).sum(dim="sample", skipna=False) / num_samps
-  return mean_abs_err - 0.5 * mean_abs_diff
-
-
-# plot_size = 5
-# plot_max_steps = min(predictions.dims["time"], plot_pred_max_steps.value)
-#
-# fig_title = plot_pred_variable.value
-# if "level" in predictions[plot_pred_variable.value].coords:
-#   fig_title += f" at {plot_pred_level.value} hPa"
-#
-# data = {
-#     "Targets": scale(select(eval_targets, plot_pred_variable.value, plot_pred_level.value, plot_max_steps), robust=plot_pred_robust.value),
-#     "Ensemble Mean": scale(select(predictions.mean(dim=["sample"]), plot_pred_variable.value, plot_pred_level.value, plot_max_steps), robust=plot_pred_robust.value),
-#     "Ensemble CRPS": scale(crps((select(eval_targets, plot_pred_variable.value, plot_pred_level.value, plot_max_steps)),
-#                         select(predictions, plot_pred_variable.value, plot_pred_level.value, plot_max_steps)),
-#                       robust=plot_pred_robust.value, center=0),
-# }
-# display.display(plot_data(data, fig_title, plot_size, plot_pred_robust.value))
-
-
-# # Train the model
-# 
-# The following operations requires larger amounts of memory than running inference.
-# 
-# The first time executing the cell takes more time, as it includes the time to jit the function.
-
-# In[21]:
-
-
-#loss_fn_jitted = jax.jit(
-#    lambda rng, i, t, f: loss_fn.apply(params, state, rng, i, t, f)[0]
-#)
-
-
-# In[22]:
-
-
-# @title Loss computation
-#loss, diagnostics = loss_fn_jitted(
-#    jax.random.PRNGKey(0),
-#    train_inputs,
-#    train_targets,
-#    train_forcings)
-#print("Loss:", float(loss))
-
-
-# In[23]:
-
-
-# @title Gradient computation
-#loss, diagnostics, next_state, grads = grads_fn_jitted(
-#    params=params,
-#    state=state,
-#    inputs=train_inputs,
-#    targets=train_targets,
-#    forcings=train_forcings)
-#mean_grad = np.mean(jax.tree_util.tree_flatten(jax.tree_util.tree_map(lambda x: np.abs(x).mean(), grads))[0])
-#print(f"Loss: {loss:.4f}, Mean |grad|: {mean_grad:.6f}")
-
-
-# In[ ]:
 
 
 
