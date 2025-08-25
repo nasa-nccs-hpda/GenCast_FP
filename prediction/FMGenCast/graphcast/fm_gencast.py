@@ -165,7 +165,7 @@ train_inputs, train_targets, train_forcings = data_utils.extract_inputs_targets_
 eval_inputs, eval_targets, eval_forcings = data_utils.extract_inputs_targets_forcings(
     example_batch, target_lead_times=slice("12h", f"{(example_batch.dims['time']-2)*12}h"), # All but 2 input frames.
     **dataclasses.asdict(task_config))
-print(eval_inputs)
+
 print("All Examples:  ", example_batch.dims.mapping)
 print("Train Inputs:  ", train_inputs.dims.mapping)
 print("Train Targets: ", train_targets.dims.mapping)
@@ -173,18 +173,18 @@ print("Train Forcings:", train_forcings.dims.mapping)
 print("Eval Inputs:   ", eval_inputs.dims.mapping)
 print("Eval Targets:  ", eval_targets.dims.mapping)
 print("Eval Forcings: ", eval_forcings.dims.mapping)
-exit()
+
 # @title Load normalization data
-relative_diffs_file = "../../../checkpoints/gencast/gencast-stats-diffs_stddev_by_level.nc"
+relative_diffs_file = "../../checkpoints/gencast/gencast-stats-diffs_stddev_by_level.nc"
 diffs_file = os.path.join(script_dir, relative_diffs_file)
 
-relative_mean_file = "../../../checkpoints/gencast/gencast-stats-mean_by_level.nc"
+relative_mean_file = "../../checkpoints/gencast/gencast-stats-mean_by_level.nc"
 mean_file = os.path.join(script_dir, relative_mean_file)
 
-relative_stddev_file = "../../../checkpoints/gencast/gencast-stats-stddev_by_level.nc"
+relative_stddev_file = "../../checkpoints/gencast/gencast-stats-stddev_by_level.nc"
 stddev_file = os.path.join(script_dir, relative_stddev_file)
 
-relative_min_file = "../../../checkpoints/gencast/gencast-stats-min_by_level.nc"
+relative_min_file = "../../checkpoints/gencast/gencast-stats-min_by_level.nc"
 min_file = os.path.join(script_dir, relative_min_file)
 
 with open(diffs_file, "rb") as f:
@@ -302,8 +302,8 @@ for chunk in rollout.chunked_prediction_generator_multiple_runs(
     ):
     chunks.append(chunk)
 predictions = xarray.combine_by_coords(chunks)
-out_dir = "/discover/nobackup/projects/QEFM/data/rollout_outputs/FMGenCast/raw/Y2024"
-out_file_value = f"gencast-prediction-era5_date-{date_str}_res-1.0_levels-13_steps-20.nc"
+out_dir = "/discover/nobackup/jli30/GenCast_FP/output_test"
+out_file_value = f"gencast-dataset-prediction-geos_date-2024-12-01_res-1.0_levels-13_steps-20.nc"
 out_file = os.path.join(out_dir, out_file_value)
 predictions.to_netcdf(out_file)
 print("Predictions computed for 10 days out_file:\n", out_file, "\n")
