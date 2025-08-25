@@ -120,7 +120,6 @@ else:
 
   print("Model description:\n", ckpt.description, "\n")
   print("Model license:\n", ckpt.license, "\n")
-  exit()
 
 
 # ## Load the example data
@@ -142,8 +141,8 @@ def data_valid_for_model(file_name: str, params_file_name: str):
 
 # @title Load weather data
 
-dataset_dir = "/discover/nobackup/projects/QEFM/data/FMGenCast/12hr/Y2024"
-dataset_file_value = f"gencast-dataset-source-era5_date-{date_str}_res-1.0_levels-13_steps-20.nc"
+dataset_dir = "/discover/nobackup/jli30/GenCast_FP/output_test"
+dataset_file_value = f"gencast-dataset-source-geos_date-2024-12-01_res-1.0_levels-13_steps-20.nc"
 dataset_file = os.path.join(dataset_dir, dataset_file_value)
 print("dataset_file_value:\n", dataset_file_value, "\n")
 # with gcs_bucket.blob(dir_prefix + f"dataset/{dataset_file_value}").open("rb") as f:
@@ -167,7 +166,6 @@ eval_inputs, eval_targets, eval_forcings = data_utils.extract_inputs_targets_for
     example_batch, target_lead_times=slice("12h", f"{(example_batch.dims['time']-2)*12}h"), # All but 2 input frames.
     **dataclasses.asdict(task_config))
 print(eval_inputs)
-exit()
 print("All Examples:  ", example_batch.dims.mapping)
 print("Train Inputs:  ", train_inputs.dims.mapping)
 print("Train Targets: ", train_targets.dims.mapping)
@@ -175,7 +173,7 @@ print("Train Forcings:", train_forcings.dims.mapping)
 print("Eval Inputs:   ", eval_inputs.dims.mapping)
 print("Eval Targets:  ", eval_targets.dims.mapping)
 print("Eval Forcings: ", eval_forcings.dims.mapping)
-
+exit()
 # @title Load normalization data
 relative_diffs_file = "../../../checkpoints/gencast/gencast-stats-diffs_stddev_by_level.nc"
 diffs_file = os.path.join(script_dir, relative_diffs_file)
