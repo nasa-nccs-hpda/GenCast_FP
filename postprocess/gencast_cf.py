@@ -40,8 +40,6 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir):
 
     # Latitude
     lats = ds['lat'].values
-    fill_north = False
-    fill_south = False
     if lats[0] > lats[-1]:
         ds = ds.sel(lat=slice(None, None, -1))
 
@@ -68,17 +66,6 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir):
         # Flip the level array
     #    ds['lev'] = levs[::-1]
         # Flip the data array
-        ds = ds.sel(lev=slice(None, None, -1))
-    ds.lev.attrs = {
-        "long_name" : "pressure_level",
-        "units" : "hPa",
-    }
-
-    # level
-    ds = ds.rename({'level': 'lev'})
-    levs = ds['lev'].values.astype(np.float32)
-    ds['lev'] = levs
-    if levs[0] < levs[-1]:
         ds = ds.sel(lev=slice(None, None, -1))
     ds.lev.attrs = {
         "long_name" : "pressure_level",
