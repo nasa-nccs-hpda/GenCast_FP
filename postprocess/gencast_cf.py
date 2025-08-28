@@ -234,7 +234,10 @@ def main():
     for ctime in ds_org.time.values:
         proc_time_step(ds_org, ctime, ref_date, output_dir)
 
-
+if __name__ == "__main__":
+    ens_mean = True
+    main()
+# ## Example usage
 # #fmodel = "FMGenCast"
 # #file_path = input_dir / fmodel / 'raw' / 'Y2024'
 # #file_path = input_dir / fmodel / 'raw' / '0p25'
