@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 import argparse
 
-def proc_time_step(ds_org, ctime, ref_date, outputdir):
+def proc_time_step(ds_org, ctime, ref_date, output_dir):
     fmodel = "FMGenCast"
     FILL_VALUE = np.float32(1.e+15)
     ds = ds_org.sel(time=ctime).expand_dims("time")
@@ -192,17 +192,17 @@ def proc_time_step(ds_org, ctime, ref_date, outputdir):
     }
 
 
-    ## Write to NetCDF
-    compression = {"zlib": True, 
-                "complevel": 1,
-                "shuffle": True,}
-    encoding = {var: compression for var in ds.data_vars}
-    #output_dir = Path(f"/discover/nobackup/projects/QEFM/data/rollout_outputs/{fmodel}/geos-fp-interp-no-mask/Y{yyyy}/M{mm}/D{dd}")
-    #output_dir = Path(f"/discover/nobackup/projects/QEFM/data/rollout_outputs/{fmodel}/0p25/Y{yyyy}/M{mm}/D{dd}")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    fname = f"GenCast-prediction-geos_date-{tstamp}_res-1.0_levels-13_ens-mean.nc"
-    output_file = output_dir / fname
-    ds.to_netcdf(output_file, encoding=encoding, engine="netcdf4")
+    # ## Write to NetCDF
+    # compression = {"zlib": True, 
+    #             "complevel": 1,
+    #             "shuffle": True,}
+    # encoding = {var: compression for var in ds.data_vars}
+    # #output_dir = Path(f"/discover/nobackup/projects/QEFM/data/rollout_outputs/{fmodel}/geos-fp-interp-no-mask/Y{yyyy}/M{mm}/D{dd}")
+    # #output_dir = Path(f"/discover/nobackup/projects/QEFM/data/rollout_outputs/{fmodel}/0p25/Y{yyyy}/M{mm}/D{dd}")
+    # output_dir.mkdir(parents=True, exist_ok=True)
+    # fname = f"GenCast-prediction-geos_date-{tstamp}_res-1.0_levels-13_ens-mean.nc"
+    # output_file = output_dir / fname
+    # ds.to_netcdf(output_file, encoding=encoding, engine="netcdf4")
 
 
 
@@ -213,15 +213,16 @@ def main():
     parser = argparse.ArgumentParser(description="Convert GenCast output to CF-compliant NetCDF")
     # parser.add_argument("input_dir", type=str, help="Path to GenCast output directory")
     # parser.add_argument("fmodel", type=str, help="Model name")
-    parser.add_argument("--geos_dir", "-g", type=str, help="Inputs for GenCast to get surface geopotential height")
-    parser.add_argument("--pred_dir", "-p", type=str, help="directory of GenCast prediction files")
+    # parser.add_argument("--geos_dir", "-g", type=str, help="Inputs for GenCast to get surface geopotential height")
+    # parser.add_argument("--pred_dir", "-p", type=str, help="directory of GenCast prediction files")
     parser.add_argument("--year", "-y", type=str, help="Year")
     parser.add_argument("--month", "-m", type=str, help="Month")
     parser.add_argument("--day", "-d", type=str, help="Day")
     args = parser.parse_args()
 
     ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T12:00:00")
-    pred_dir = Path(args.pred_dir)
+    #pred_dir = Path(args.pred_dir)
+    pred_dir = Path("/discover/nobackup/projects/QEFM/data/rollout_outputs/FMGenCast/raw/geos")
     files = sorted(pred_dir.glob(f"*geos_date-{args.year}-{args.month}-{args.day}_*.nc"))
     file = files[0]
     ds_org = xr.open_dataset(file)
