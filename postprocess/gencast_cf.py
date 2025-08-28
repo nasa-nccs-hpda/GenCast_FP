@@ -171,7 +171,7 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir):
 
     ## add global attributes
     ds.attrs = {
-        "title" : f"{fmodel} forecast start at {yyyy}-{mm}-{dd}T12:00:00", 
+        "title" : f"{fmodel} forecast start at {YYYY}-{MM}-{DD}T12:00:00", 
         "institution" : "NASA CISTO Data Science Group",
         "source" : f"{fmodel} model output",
         "Conventions" : "CF",
