@@ -10,5 +10,5 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 # Step 2 - Generate forecasts using the preprocessed data
-sbatch $WORKDIR/run_forecast.sbatch $WORKDIR && echo "Forecasting job submitted"
+sbatch $WORKDIR/run_forecast.sh $WORKDIR && echo "Forecasting job submitted"
 
