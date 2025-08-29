@@ -6,5 +6,5 @@ This workflow is to run GenCast with GEOS-FP as inputs. Follow the steps below t
 
 ## 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/your-repo.git
-cd your-repo
+git clone https://github.com/nasa-nccs-hpda/GenCast_FP.git
+cd GenCast-FP
