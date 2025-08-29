@@ -8,7 +8,8 @@ module load singularity
 container="/discover/nobackup/projects/QEFM/containers/qefm-core-gencast-20250511-sandbox"
 
 # Define working directory and input files
-WORKDIR="/discover/nobackup/jli30/GenCast_FP/prediction/FMGenCast/graphcast"
-cd "$WORKDIR" || exit 1
+WORKDIR="/discover/nobackup/jli30/GenCast_FP"
 
-singularity exec "$container" python3 -m fm_gencast.py
+cd "$WORKDIR/prediction/FMGenCast/graphcast" || exit 1
+
+singularity exec -B "$WORKDIR" "$container" python3 -m fm_gencast.py
