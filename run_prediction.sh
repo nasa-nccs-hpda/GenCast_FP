@@ -9,31 +9,20 @@
 #SBATCH --cpus-per-task=10        # CPU cores per task (adjust)
 #SBATCH --mem=60G                 # memory (adjust as needed)
 
+# Create logs directory if it doesn't exist
+mkdir -p logs
+
 # Load necessary modules
 module load singularity
 
 # Container path
-#container="/discover/nobackup/projects/QEFM/containers/qefm-core-gencast-20250511-sandbox"
 container="/discover/nobackup/projects/QEFM/containers/qefm-core-debian-all-aifs-20250609-sandbox"
 
-# Working directory
-WORKDIR="/discover/nobackup/jli30/GenCast_FP"
+# Working directory setting in "fm_gencast.sh"
+WORKDIR=$1
+echo "Working directory: $WORKDIR"
 
 cd "$WORKDIR/prediction/FMGenCast/graphcast" || exit 1
 
 # Run inside container
 singularity exec --nv -B "$WORKDIR" "$container" python3 -m fm_gencast.py
-
-
-# # Load necessary modules
-
-# module load singularity
-# #container="/discover/nobackup/projects/QEFM/containers/qefm-core-gencast-20250511-sandbox"
-# container="/discover/nobackup/projects/QEFM/containers/qefm-core-debian-all-aifs-20250609-sandbox"
-
-# # Define working directory and input files
-# WORKDIR="/discover/nobackup/jli30/GenCast_FP"
-
-# cd "$WORKDIR/prediction/FMGenCast/graphcast" || exit 1
-
-# singularity exec -B "$WORKDIR" "$container" python3 -m fm_gencast.py
