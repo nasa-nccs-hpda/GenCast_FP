@@ -1,0 +1,23 @@
+#!/bin/bash
+
+#########################################################
+# The intermediate files will be stored in $WORKDIR/output_test
+# You can change the path by modifying the --outdir parameter in next step
+WORKDIR="/discover/nobackup/jli30/GenCast_FP"
+#########################################################
+
+#
+# Convert GEOS-FP to ERA-5 coordinate
+# outdir: output directory, will serve as input directory for GenCast run
+# start_date: start date (YYYY-MM-DD)
+# end_date: end date (YYYY-MM-DD)
+
+module load anaconda
+source activate base
+cd ${WORKDIR}/postprocess
+python gencast_cf.py \
+--geos_dir ${WORKDIR}/output_test \
+--output_dir ${WORKDIR}/output_test/CF \
+--year "2024" \
+--month "12"
+--day "01"
