@@ -253,4 +253,5 @@ def main():
     #     proc_time_step(ds_org, ctime, ref_date, output_dir)
 
 if __name__ == "__main__":
+    ens_mean = True
     main()

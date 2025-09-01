@@ -17,6 +17,7 @@ source activate base
 cd ${WORKDIR}/postprocess
 python gencast_cf.py \
 --geos_dir ${WORKDIR}/output_test \
+--pred_dir ${WORKDIR}/output_test \
 --output_dir ${WORKDIR}/output_test/CF \
 --year "2024" \
 --month "12"
