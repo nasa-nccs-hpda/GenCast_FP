@@ -218,8 +218,10 @@ def main():
     ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T00:00:00")
     ds_init = xr.open_dataset(file)
     ds_init = ds_init.drop_vars("land_sea_mask", errors='ignore')
+
+    output_dir = Path(args.geos_dir)
     for ctime in ds_init.time.values[:2]:
-        proc_time_step(ds_init, ctime, ref_date, output_dir=None)
+        proc_time_step(ds_init, ctime, ref_date, output_dir=output_dir, case="init")
     exit()    
 
     ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T12:00:00")
