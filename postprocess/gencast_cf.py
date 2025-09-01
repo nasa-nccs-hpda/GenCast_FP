@@ -204,7 +204,7 @@ def main():
     # parser.add_argument("input_dir", type=str, help="Path to GenCast output directory")
     # parser.add_argument("fmodel", type=str, help="Model name")
     parser.add_argument("--geos_dir", "-g", type=str, help="Inputs for GenCast to get surface geopotential height")
-    # parser.add_argument("--pred_dir", "-p", type=str, help="directory of GenCast prediction files")
+    parser.add_argument("--pred_dir", "-p", type=str, help="directory of GenCast prediction files")
     parser.add_argument("--output_dir", "-o", type=str, help="Output directory to CF-compliant NetCDF")
     parser.add_argument("--year", "-y", type=str, help="Year")
     parser.add_argument("--month", "-m", type=str, help="Month")
