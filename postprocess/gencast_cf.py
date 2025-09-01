@@ -212,35 +212,45 @@ def main():
 
     args = parser.parse_args()
 
-    ## Process initial conditions
-    # Retrieve files from input dir for GenCast
-    geos_dir = Path(args.geos_dir)
-    files = sorted(geos_dir.glob(f"*source-geos*{args.year}-{args.month}-{args.day}_*.nc"))
-    file = files[0]
-    ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T00:00:00")
-    ds_init = xr.open_dataset(file)
-    ds_init = ds_init.drop_vars("land_sea_mask", errors='ignore')
-
     output_dir = Path(args.output_dir)/f"Y{args.year}"/f"M{args.month}"/f"D{args.day}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    for ctime in ds_init.time.values[:2]:
-        proc_time_step(ds_init, ctime, ref_date, output_dir=output_dir, case="init")
-    exit()    
+    for case in ["init", "pred"]:
+        if case == "init":
+            ## Process initial conditions
+            # Retrieve files from input dir for GenCast
+            files = sorted(Path(args.geos_dir).glob(f"*source-geos*{args.year}-{args.month}-{args.day}_*.nc"))
+            ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T00:00:00")
+            n=2 # only process first two time steps for initial conditions
+        else:
+            files = sorted(Path(args.pred_dir).glob(f"*geos_date-{args.year}-{args.month}-{args.day}_*.nc"))
+            ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T12:00:00")
+            n = -1 # process all time steps for prediction 
+    
+    ds = xr.open_dataset(files[0])
+    ds = ds.drop_vars("land_sea_mask", errors='ignore')
+    for ctime in ds.time.values[:n]:
+        print("Processing time ", ctime, " for case ", case)
+        proc_time_step(ds, ctime, ref_date, output_dir=output_dir, case=case)
 
-    ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T12:00:00")
-    #pred_dir = Path(args.pred_dir)
-    pred_dir = Path("/discover/nobackup/projects/QEFM/data/rollout_outputs/FMGenCast/raw/geos")
-    files = sorted(pred_dir.glob(f"*geos_date-{args.year}-{args.month}-{args.day}_*.nc"))
-    file = files[0]
-    ds_org = xr.open_dataset(file)
-    ## ds_org contains all time steps for the 10-day prediction
 
-    output_dir = Path(args.geos_dir)
 
-    for ctime in ds_org.time.values:
-        proc_time_step(ds_org, ctime, ref_date, output_dir)
+    # for ctime in ds_init.time.values[:2]:
+    #     proc_time_step(ds_init, ctime, ref_date, output_dir=output_dir, case="init")
+    # exit()    
+
+    # ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T12:00:00")
+    # #pred_dir = Path(args.pred_dir)
+    # pred_dir = Path("/discover/nobackup/projects/QEFM/data/rollout_outputs/FMGenCast/raw/geos")
+    # files = sorted(pred_dir.glob(f"*geos_date-{args.year}-{args.month}-{args.day}_*.nc"))
+    # file = files[0]
+    # ds_org = xr.open_dataset(file)
+    # ## ds_org contains all time steps for the 10-day prediction
+
+    # output_dir = Path(args.geos_dir)
+
+    # for ctime in ds_org.time.values:
+    #     proc_time_step(ds_org, ctime, ref_date, output_dir)
 
 if __name__ == "__main__":
-    ens_mean = True
     main()
