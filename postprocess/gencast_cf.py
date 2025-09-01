@@ -79,7 +79,6 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir, case="init"):
             "long_name" : "ensemble_member",
             "units" : " ",
         }
-        print("After coord \n", ds)
 
         ## Calculate ensemble mean
         if ens_mean:
@@ -104,8 +103,6 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir, case="init"):
     }
     valid_rename_dict = {k: v for k, v in rename_dict.items() if k in ds.variables}
     ds = ds.rename(valid_rename_dict)
-    print("After rename \n ", ds)
-
 
     # map attributes
     varMap = {
@@ -230,7 +227,7 @@ def main():
     ds = xr.open_dataset(files[0])
     ds = ds.drop_vars("land_sea_mask", errors='ignore')
     for ctime in ds.time.values[:n]:
-        print("Processing time ", ctime, " for case ", case)
+        print("Processing time ", f"{ctime.strftime("%Y-%m-%d")}", " for case ", case)
         proc_time_step(ds, ctime, ref_date, output_dir=output_dir, case=case)
 
 
