@@ -100,8 +100,10 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir):
         "u_component_of_wind": "U",
         "v_component_of_wind": "V",
         "vertical_velocity": "OMEGA",
+        "geopotential_at_surface": "PHIS",
     }
-    ds = ds.rename(rename_dict)
+    valid_rename_dict = {k: v for k, v in rename_dict.items() if k in ds.variables}
+    ds = ds.rename(valid_rename_dict)
     print("After rename \n ", ds)
 
 
@@ -215,7 +217,7 @@ def main():
     ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T00:00:00")
     ds_init = xr.open_dataset(file)
     for ctime in ds_init.time.values[:2]:
-        proc_time_step(ds_init, ctime, red_date, output_dir=None)
+        proc_time_step(ds_init, ctime, ref_date, output_dir=None)
     exit()    
 
     ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T12:00:00")
