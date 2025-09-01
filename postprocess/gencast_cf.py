@@ -200,12 +200,23 @@ def main():
     parser = argparse.ArgumentParser(description="Convert GenCast output to CF-compliant NetCDF")
     # parser.add_argument("input_dir", type=str, help="Path to GenCast output directory")
     # parser.add_argument("fmodel", type=str, help="Model name")
-    # parser.add_argument("--geos_dir", "-g", type=str, help="Inputs for GenCast to get surface geopotential height")
+    parser.add_argument("--geos_dir", "-g", type=str, help="Inputs for GenCast to get surface geopotential height")
     # parser.add_argument("--pred_dir", "-p", type=str, help="directory of GenCast prediction files")
     parser.add_argument("--year", "-y", type=str, help="Year")
     parser.add_argument("--month", "-m", type=str, help="Month")
     parser.add_argument("--day", "-d", type=str, help="Day")
     args = parser.parse_args()
+
+    ## Process initial conditions
+    # Retrieve files from input dir for GenCast
+    geos_dir = Path(args.geos_dir)
+    files = sorted(geos_dir.glob(f"*source-geos*{args.year}-{args.month}-{args.day}_*.nc"))
+    file = files[0]
+    ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T00:00:00")
+    ds_init = xr.open_dataset(file)
+    for ctim in ds_init.time.values[:2]:
+        proc_time_step(ds_init, ctime, red_date, output_dir=None)
+    exit()    
 
     ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T12:00:00")
     #pred_dir = Path(args.pred_dir)
