@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 import argparse
 
-def proc_time_step(ds_org, ctime, ref_date, output_dir):
+def proc_time_step(ds_org, ctime, ref_date, output_dir, case="init"):
     fmodel = "FMGenCast"
     FILL_VALUE = np.float32(1.e+15)
     ds = ds_org.sel(time=ctime).expand_dims("time")
@@ -182,16 +182,17 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir):
 
 
     # ## Write to NetCDF
-    # compression = {"zlib": True, 
-    #             "complevel": 1,
-    #             "shuffle": True,}
-    # encoding = {var: compression for var in ds.data_vars}
-    # #output_dir = Path(f"/discover/nobackup/projects/QEFM/data/rollout_outputs/{fmodel}/geos-fp-interp-no-mask/Y{yyyy}/M{mm}/D{dd}")
-    # #output_dir = Path(f"/discover/nobackup/projects/QEFM/data/rollout_outputs/{fmodel}/0p25/Y{yyyy}/M{mm}/D{dd}")
-    # output_dir.mkdir(parents=True, exist_ok=True)
-    # fname = f"GenCast-prediction-geos_date-{tstamp}_res-1.0_levels-13_ens-mean.nc"
-    # output_file = output_dir / fname
-    # ds.to_netcdf(output_file, encoding=encoding, engine="netcdf4")
+    compression = {"zlib": True, 
+                "complevel": 1,
+                "shuffle": True,}
+    encoding = {var: compression for var in ds.data_vars}
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if case == "init":
+        fname = f"{fmodel}-initial-geos_date-{tstamp}_res-1.0_levels-13.nc"
+    else:
+        fname = f"{fmodel}-prediction-geos_date-{tstamp}_res-1.0_levels-13_ens-mean.nc"
+    output_file = output_dir / fname
+    ds.to_netcdf(output_file, encoding=encoding, engine="netcdf4")
 
 
 
