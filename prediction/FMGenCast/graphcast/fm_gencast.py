@@ -45,21 +45,24 @@ parser.add_argument('--out_dir', '-o', type=str, help='Output directory')
 
 
 args = parser.parse_args()
-
-# Set up output directory
-out_dir = args.out_dir
-if not os.path.exists(out_dir):
-    os.makedirs(out_dir)
-
 # Set up input directory and file
 date_str = args.date
 print("date_str:\n", date_str, "\n")
 
+
+# Set up input directory and file
 dataset_dir = args.input_dir
 dataset_file_value = f"gencast-dataset-source-geos_date-{date_str}_res-1.0_levels-13_steps-20.nc"
 dataset_file = os.path.join(dataset_dir, dataset_file_value)
 if not os.path.exists(dataset_file):
     raise FileNotFoundError(f"Input file not found: {dataset_file}")
+
+# Set up output directory
+out_dir = args.out_dir
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
+out_file_value = f"gencast-dataset-prediction-geos_date-{date_str}_res-1.0_levels-13_steps-20.nc"
+out_file = os.path.join(out_dir, out_file_value)
 
 
 # Get the directory of the current script
@@ -319,9 +322,6 @@ for chunk in rollout.chunked_prediction_generator_multiple_runs(
     ):
     chunks.append(chunk)
 predictions = xarray.combine_by_coords(chunks)
-out_dir = "/discover/nobackup/jli30/GenCast_FP/output_test"
-out_file_value = f"gencast-dataset-prediction-geos_date-2024-12-01_res-1.0_levels-13_steps-20.nc"
-out_file = os.path.join(out_dir, out_file_value)
 predictions.to_netcdf(out_file)
 print("Predictions computed for 10 days out_file:\n", out_file, "\n")
 
