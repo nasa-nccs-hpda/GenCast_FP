@@ -230,8 +230,7 @@ def main():
     ds_org = xr.open_dataset(file)
     ## ds_org contains all time steps for the 10-day prediction
 
-    fmodel = "FMGenCast"
-    output_dir = Path(f"/discover/nobackup/projects/QEFM/data/rollout_outputs/{fmodel}/geos-fp-interp-no-mask/Y{args.year}/M{args.month}/D{args.day}")
+    output_dir = Path(args.geos_dir)
 
     for ctime in ds_org.time.values:
         proc_time_step(ds_org, ctime, ref_date, output_dir)
