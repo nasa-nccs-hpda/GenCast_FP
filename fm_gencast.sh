@@ -11,7 +11,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Step 2 - Generate forecasts using the preprocessed data
-sbatch $WORKDIR/run_prediction.sh $WORKDIR && echo "Forecasting job submitted"
+sbatch --wait $WORKDIR/run_prediction.sh $WORKDIR && echo "Forecasting job submitted"
 
 # Step 3 (optional) - Post-process the forecast outputs
 # Compute ensemble mean and convert to NetCDF for each forecast lead time
