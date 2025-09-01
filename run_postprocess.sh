@@ -20,5 +20,5 @@ python gencast_cf.py \
 --pred_dir ${WORKDIR}/output_test \
 --output_dir ${WORKDIR}/output_test/CF \
 --year "2024" \
---month "12"
+--month "12" \
 --day "01"
