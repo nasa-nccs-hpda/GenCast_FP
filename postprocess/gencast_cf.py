@@ -216,6 +216,7 @@ def main():
     file = files[0]
     ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T00:00:00")
     ds_init = xr.open_dataset(file)
+    ds_init = ds_init.drop_vars("land_sea_mask", errors='ignore')
     for ctime in ds_init.time.values[:2]:
         proc_time_step(ds_init, ctime, ref_date, output_dir=None)
     exit()    
