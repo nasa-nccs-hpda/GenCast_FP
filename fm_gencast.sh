@@ -9,6 +9,14 @@ if [ $? -ne 0 ]; then
     echo "Preprocessing failed"
     exit 1
 fi
+
 # Step 2 - Generate forecasts using the preprocessed data
 sbatch $WORKDIR/run_prediction.sh $WORKDIR && echo "Forecasting job submitted"
 
+# Step 3 (optional) - Post-process the forecast outputs
+# Compute ensemble mean and convert to NetCDF for each forecast lead time
+bash $WORKDIR/run_postprocess.sh $WORKDIR && echo "Postprocessing done"
+if [ $? -ne 0 ]; then
+    echo "Postprocessing failed"
+    exit 1
+fi

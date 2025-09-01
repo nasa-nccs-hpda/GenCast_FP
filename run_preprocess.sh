@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #########################################################
-# The intermediate files will be stored in $WORKDIR/output_test
+# The intermediate files will be stored in $WORKDIR/test/FP2E
 # You can change the path by modifying the --outdir parameter in next step
 WORKDIR="$1"
 #########################################################

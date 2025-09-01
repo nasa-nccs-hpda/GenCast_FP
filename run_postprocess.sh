@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #########################################################
-# The intermediate files will be stored in $WORKDIR/output_test
-# You can change the path by modifying the --outdir parameter in next step
-WORKDIR="/discover/nobackup/jli30/GenCast_FP"
+# The intermediate files will be stored in $WORKDIR/test/CF
+# You can change the path by modifying the --output_dir parameter
+WORKDIR="$1"
 #########################################################
 
 #
