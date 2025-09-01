@@ -227,7 +227,7 @@ def main():
         ds = xr.open_dataset(files[0])
         ds = ds.drop_vars("land_sea_mask", errors='ignore')
         for ctime in ds.time.values[:n]:
-            print("Processing time ", ctime.astype('str'), " for case ", case)
+            print("Processing time ", ctime.astype('datetime64[D]').astype('str'), " for case ", case)
             proc_time_step(ds, ctime, ref_date, output_dir=output_dir, case=case)
 
 
