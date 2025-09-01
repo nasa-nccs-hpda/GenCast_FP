@@ -224,11 +224,11 @@ def main():
             ref_date = np.datetime64(f"{args.year}-{args.month}-{args.day}T12:00:00")
             n = -1 # process all time steps for prediction 
     
-    ds = xr.open_dataset(files[0])
-    ds = ds.drop_vars("land_sea_mask", errors='ignore')
-    for ctime in ds.time.values[:n]:
-        print("Processing time ", str(np.datetime64(ctime, 'ns')), " for case ", case)
-        proc_time_step(ds, ctime, ref_date, output_dir=output_dir, case=case)
+        ds = xr.open_dataset(files[0])
+        ds = ds.drop_vars("land_sea_mask", errors='ignore')
+        for ctime in ds.time.values[:n]:
+            print("Processing time ", ctime.astype('str'), " for case ", case)
+            proc_time_step(ds, ctime, ref_date, output_dir=output_dir, case=case)
 
 
 
