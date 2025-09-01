@@ -16,9 +16,9 @@ module load anaconda
 source activate base
 cd ${WORKDIR}/postprocess
 python gencast_cf.py \
---geos_dir ${WORKDIR}/output_test \
---pred_dir ${WORKDIR}/output_test \
---output_dir ${WORKDIR}/output_test/CF \
+--geos_dir ${WORKDIR}/test/FP2E \
+--pred_dir ${WORKDIR}/test/GenCastRaw \
+--output_dir ${WORKDIR}/test/CF \
 --year "2024" \
 --month "12" \
 --day "01"

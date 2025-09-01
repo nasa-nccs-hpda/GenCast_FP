@@ -39,15 +39,33 @@ from graphcast import nan_cleaning
 import os
 
 parser = argparse.ArgumentParser(description='GenCast Mini Prediction')
-parser.add_argument('--date', '-s', type=str, default='2024-12-12', help='Date to forecast')
+parser.add_argument('--date', '-s', type=str, default='2024-12-01', help='Date to forecast')
+parser.add_argument('--input_dir', '-i', type=str, help='Input directory')
+parser.add_argument('--out_dir', '-o', type=str, help='Output directory')
+
+
 args = parser.parse_args()
+
+# Set up output directory
+out_dir = args.out_dir
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
+
+# Set up input directory and file
 date_str = args.date
 print("date_str:\n", date_str, "\n")
 
+dataset_dir = args.input_dir
+dataset_file_value = f"gencast-dataset-source-geos_date-{date_str}_res-1.0_levels-13_steps-20.nc"
+dataset_file = os.path.join(dataset_dir, dataset_file_value)
+if not os.path.exists(dataset_file):
+    raise FileNotFoundError(f"Input file not found: {dataset_file}")
+
+
+# Get the directory of the current script
 script_dir = os.path.dirname(os.path.abspath(__name__))
 print("script_dir:\n", script_dir, "\n")
 
-#dir_prefix = "gencast/"
 
 latent_value_options = [int(2**i) for i in range(4, 10)]
 
@@ -140,10 +158,9 @@ def data_valid_for_model(file_name: str, params_file_name: str):
   return res_matches and source_matches
 
 # @title Load weather data
-
-dataset_dir = "/discover/nobackup/jli30/GenCast_FP/output_test"
-dataset_file_value = f"gencast-dataset-source-geos_date-2024-12-01_res-1.0_levels-13_steps-20.nc"
-dataset_file = os.path.join(dataset_dir, dataset_file_value)
+# dataset_dir = "/discover/nobackup/jli30/GenCast_FP/output_test"
+# dataset_file_value = f"gencast-dataset-source-geos_date-2024-12-01_res-1.0_levels-13_steps-20.nc"
+# dataset_file = os.path.join(dataset_dir, dataset_file_value)
 print("dataset_file_value:\n", dataset_file_value, "\n")
 # with gcs_bucket.blob(dir_prefix + f"dataset/{dataset_file_value}").open("rb") as f:
 with open(dataset_file, "rb") as f:
