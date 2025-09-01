@@ -28,4 +28,4 @@ cd "$WORKDIR/prediction/FMGenCast/graphcast" || exit 1
 singularity exec --nv -B "$WORKDIR" "$container" python3 -m fm_gencast.py \
 --date "2024-12-01" \
 --input_dir "$WORKDIR/test/FP2E" \
---output_dir "$WORKDIR/test/GenCastRaw" \
+--out_dir "$WORKDIR/test/GenCastRaw" \
