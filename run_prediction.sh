@@ -9,9 +9,6 @@
 #SBATCH --cpus-per-task=10        # CPU cores per task (adjust)
 #SBATCH --mem=60G                 # memory (adjust as needed)
 
-# Create logs directory if it doesn't exist
-mkdir -p logs
-
 # Load necessary modules
 module load singularity
 

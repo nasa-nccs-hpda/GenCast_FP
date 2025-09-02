@@ -11,6 +11,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # Step 2 - Generate forecasts using the preprocessed data
+# Create logs directory if it doesn't exist
+mkdir -p $WORKDIR/logs
 sbatch --wait $WORKDIR/run_prediction.sh $WORKDIR && echo "Forecasting job submitted"
 
 # Step 3 (optional) - Post-process the forecast outputs
