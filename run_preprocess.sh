@@ -18,4 +18,4 @@ cd ${WORKDIR}/preprocess
 python fp2e5.py \
 --outdir ${WORKDIR}/test/FP2E \
 --start_date 2024-12-01 \
---end_date 2024-12-02
+--end_date 2024-12-01
