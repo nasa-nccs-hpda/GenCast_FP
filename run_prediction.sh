@@ -2,12 +2,12 @@
 #SBATCH --job-name=gencast_pred
 #SBATCH --output=logs/gencast_pred_%j.out
 #SBATCH --error=logs/gencast_pred_%j.err
-#SBATCH --time=00:30:00           # walltime (adjust)
+#SBATCH --time=2:00:00            # walltime (adjust)
 #SBATCH --partition=gpu_a100      # GPU partition (check your cluster name)
 #SBATCH --constraint=rome
-#SBATCH --gres=gpu:1              # request 1 GPU
+#SBATCH --gres=gpu:4              # request 1 node
 #SBATCH --cpus-per-task=10        # CPU cores per task (adjust)
-#SBATCH --mem=60G                 # memory (adjust as needed)
+#SBATCH --mem=120G                # memory (adjust as needed)
 
 # Load necessary modules
 module load singularity

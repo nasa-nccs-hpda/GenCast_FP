@@ -3,7 +3,7 @@
 #########################################################
 # The intermediate files will be stored in $WORKDIR/test/FP2E
 # You can change the path by modifying the --outdir parameter in next step
-WORKDIR="$1"
+WORKDIR="$PWD"
 #########################################################
 
 #
@@ -16,6 +16,6 @@ module load anaconda
 source activate base
 cd ${WORKDIR}/preprocess
 python fp2e5.py \
---outdir ${WORKDIR}/test/FP2E \
---start_date 2024-12-01 \
---end_date 2024-12-01
+--outdir ${WORKDIR}/test/ground_truth \
+--start_date 2024-12-15 \
+--end_date 2024-12-15

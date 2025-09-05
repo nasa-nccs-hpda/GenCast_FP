@@ -98,9 +98,12 @@ def to_gencast_input(ds):
     }
 
     # coarsen the data & reverse the latitude
-    ds = ds.isel(
-        latitude=slice(None, None, -4), longitude=slice(None, None, 4)
-    ).compute()
+    # ds = ds.isel(
+    #     latitude=slice(None, None, -4), longitude=slice(None, None, 4)
+    # ).compute()
+    ds = ds.sortby(
+        "latitude", ascending=False
+    )  # SANDY -- keep reverse order for 0.25 degree
 
     ds = ds.drop_vars(["hgt", "p", "sp", "skt"])
     # change variable names
@@ -122,13 +125,6 @@ def to_gencast_input(ds):
 
     # change time coordinate to timedelta
     ds["time"] = ds["time"] - ds["time"].isel(time=0)
-
-    # # add land_sea_mask
-    # file = f"/discover/nobackup/projects/QEFM/data/FMGenCast/12hr/Y2024/gencast-dataset-source-era5_date-{date_str}_res-1.0_levels-13_steps-20.nc"
-    # ds_lsm = xr.open_dataset(file)
-    # ds['land_sea_mask'] = ds_lsm['land_sea_mask']
-    # # using the sea_surface_temperature from the original dataset
-    # ds['sea_surface_temperature'] = ds_lsm['sea_surface_temperature']
 
     # drop the time dimension for geopotential_at_surface
     ds["geopotential_at_surface"] = (
@@ -224,7 +220,12 @@ def main():
         ds_out = to_gencast_input(ai_day)
         # save to netcdf
         date_str = dt.strftime("%Y-%m-%d")
-        out_file = f"{outdir}/gencast-dataset-source-geos_date-{date_str}_res-1.0_levels-13_steps-20.nc"
+        res_value = 0.25
+        steps = 30
+        out_file = (
+            f"gencast-dataset-prediction-geos_date-{date_str}"
+            f"_res-{res_value}_levels-13_steps-{steps}.nc"
+        )
         ds_out.to_netcdf(
             out_file, mode="w", format="NETCDF4", engine="netcdf4"
         )
