@@ -224,7 +224,12 @@ def main():
         ds_out = to_gencast_input(ai_day)
         # save to netcdf
         date_str = dt.strftime("%Y-%m-%d")
-        out_file = f"{outdir}/gencast-dataset-source-geos_date-{date_str}_res-1.0_levels-13_steps-20.nc"
+        res_value = 1.0  # 1.0 resolution
+        nsteps = 30  # 15 day rollout
+        out_file = (
+            f"{outdir}/gencast-dataset-source-geos_date-{date_str}"
+            f"_res-{res_value}_levels-13_steps-{nsteps}.nc"
+        )
         ds_out.to_netcdf(
             out_file, mode="w", format="NETCDF4", engine="netcdf4"
         )
