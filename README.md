@@ -1,6 +1,6 @@
 # GenCast-FP end-to-end workflow
 
-This workflow is to generate GenCast predictions with GEOS-FP as inputs. Follow the steps below to set up and run.
+This workflow is to generate GenCast predictions with GEOS-FP as inputs. Follow the steps below to set up and run. The workflow currently only works on DISCOVER filesystems.
 
 ---
 
