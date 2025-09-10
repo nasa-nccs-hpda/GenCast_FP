@@ -4,7 +4,7 @@ This workflow is to generate GenCast predictions with GEOS-FP as inputs. Follow 
 
 ---
 
-## 1. Clone the Repository
+## 1. Clone the Repository on DISCOVER
 ```bash
 mkdir <dir_name>
 cd <dir_name>
