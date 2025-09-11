@@ -2,7 +2,9 @@ name: QEFM to Docker Hub
 
 on:
   workflow_dispatch:
-
+  push:
+    branches:
+      - 'deployment-operations'
 jobs:
   docker:
     runs-on: ubuntu-latest
