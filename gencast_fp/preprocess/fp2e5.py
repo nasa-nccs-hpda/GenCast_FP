@@ -1,15 +1,19 @@
-## this is the driver code for converting GEOS-FP data to ERA5 format
+# This is the driver code for converting GEOS-FP data to ERA5 format
+
 import os
+import argparse
 import numpy as np
+import xesmf as xe
 import xarray as xr
 import pandas as pd
-import xesmf as xe
-from fp_to_era5 import *
-import argparse
+
+# from fp_to_era5 import *
+from gencast_fp.preprocess.fp_to_era5 import \
+    discover_files, fp_to_era5_xlevs, \
+    era5_dataset, fp_to_era5_hgrid
 
 
-def get_era5_lsm():
-    lsm_file = "/css/era5/static/era5_static-allvar.nc"
+def get_era5_lsm(lsm_file: str = "/css/era5/static/era5_static-allvar.nc"):
     ds = xr.open_dataset(lsm_file, engine="netcdf4")
     lsm = (
         ds["lsm"]
@@ -48,6 +52,7 @@ def expand_dims(ds, steps):
 
 
 def to_gencast_input(ds):
+
     nsteps = 32
     GRAV = 9.80665
 
@@ -139,48 +144,15 @@ def to_gencast_input(ds):
     return ds
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Convert GEOS-FP data to ERA5 format."
-    )
-    parser.add_argument(
-        "--start_date",
-        type=str,
-        required=True,
-        help="Start date to process (YYYY-MM-DD)",
-    )
-    parser.add_argument(
-        "--end_date",
-        type=str,
-        required=True,
-        help="End date to process (YYYY-MM-DD)",
-    )
+def run_preprocess(start_date, end_date, outdir, expid):
 
-    parser.add_argument(
-        "--outdir",
-        type=str,
-        default="./output/",
-        help="Output directory for the converted files",
-    )
-    parser.add_argument(
-        "--expid",
-        type=str,
-        default="f5295",
-        help="Experiment ID for the output files",
-    )
-
-    args = parser.parse_args()
-
-    os.makedirs(args.outdir, exist_ok=True)
+    os.makedirs(outdir, exist_ok=True)
 
     dates = pd.date_range(
-        start=args.start_date,
-        end=pd.to_datetime(args.end_date) + pd.Timedelta(hours=23),
+        start=start_date,
+        end=pd.to_datetime(end_date) + pd.Timedelta(hours=23),
         freq="12h",
     )
-
-    outdir = args.outdir
-    expid = args.expid
 
     regridder = None
     for _, dates in dates.groupby(dates.date).items():
@@ -233,6 +205,51 @@ def main():
         ds_out.to_netcdf(
             out_file, mode="w", format="NETCDF4", engine="netcdf4"
         )
+    return
+
+
+def main():
+
+    parser = argparse.ArgumentParser(
+        description="Convert GEOS-FP data to ERA5 format."
+    )
+    parser.add_argument(
+        "--start_date",
+        type=str,
+        required=True,
+        help="Start date to process (YYYY-MM-DD)",
+    )
+    parser.add_argument(
+        "--end_date",
+        type=str,
+        required=True,
+        help="End date to process (YYYY-MM-DD)",
+    )
+
+    parser.add_argument(
+        "--outdir",
+        type=str,
+        default="./output/",
+        help="Output directory for the converted files",
+    )
+    parser.add_argument(
+        "--expid",
+        type=str,
+        default="f5295",
+        help="Experiment ID for the output files",
+    )
+
+    args = parser.parse_args()
+
+    # Run preprocessing function
+    run_preprocess(
+        args.start_date,
+        args.end_date,
+        args.outdir,
+        args.expid
+    )
+
+    return
 
 
 if __name__ == "__main__":

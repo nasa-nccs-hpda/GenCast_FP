@@ -1,24 +1,26 @@
 """
 Simple wrapper around eta2prs Fortran extension.
-
 Arlindo da Silva, April 2025.
-
+Modified: Jordan A. Caraballo-Vega, September 2025.
+TODO:
+    - PEP8 compliance
 """
-
-import numpy  as np
+import numpy as np
 import xarray as xr
-import eta
-import eta2xprs_   # f2py extension
+import gencast_fp.preprocess.eta as eta
+import gencast_fp.preprocess.eta2xprs_ as eta2xprs_
 
 HEIGHT, TEMPERATURE, OTHER = -1, 1, 0
 LINEAR, LOG, LOGLOG = 1, 2, 3
 
 UNDEF = 1.0E10
 
-def xEta2xprs(fp_Nv, fp_Nx, plevs, method, 
+
+def xEta2xprs(fp_Nv, fp_Nx, plevs, method,
               ti=0, eta_coeffs=None, extrapolate=True, verbose=False):
     """
-    Convert all data variables in the xarray dataset *fp_Nv* from eta to pressure coordinates.
+    Convert all data variables in the xarray dataset
+    *fp_Nv* from eta to pressure coordinates.
 
     fp_Np = xEta2prs(fpNv, fp_Nx, plevs, method, ...)
 
@@ -268,7 +270,7 @@ def eta2xprs(f_eta,ps,ts,phis,plevs,method,vflag,
     # a_prs = eta2prs(a_eta, ak, bk, ps, ts, phis, plevs,
     #                 xflag, vflag, method, undef)
     
-    V = eta2xprs_.eta2xprs ( f.T, ak_, bk_, ps.T, ts.T, phis.T, plevs, 
+    V = eta2xprs_.eta2xprs( f.T, ak_, bk_, ps.T, ts.T, phis.T, plevs, 
                              extrapolate, vflag, method, UNDEF)
 
     return V.T

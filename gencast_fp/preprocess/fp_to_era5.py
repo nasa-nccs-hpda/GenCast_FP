@@ -1,17 +1,17 @@
 """
+Convert these collections from GEOS-FP
 
-       Convert these collections from GEOS-FP
+- asm_Nv
+- asm_Nx
 
-       - asm_Nv
-       - asm_Nx
+to pressure coordinates, renaming variables as ERA-5,
+and converting to ERA-5 lat-lon grid.
 
-       to pressure coordinates, renaming variables as ERA-5,
-       and converting to ERA-5 lat-lon grid.
+Unlike standard GEOS-FP files, the output files are
+extrapolated under the mountains using CDO.
 
-       Unlike standard GEOS-FP files, the output files are
-       extrapolated under the mountains using CDO.
-
-
+TODO:
+    - PEP8 compliance
 """
 
 import os
@@ -20,9 +20,11 @@ import xarray as xr
 import xesmf  as xe
 
 from datetime import datetime
-import eta
 
-from eta2xprs import *
+from gencast_fp.preprocess.eta2xprs import xEta2xprs
+from gencast_fp.preprocess.eta2xprs import LOG
+
+import gencast_fp.preprocess.eta as eta
 
 # Pressure levels for AI/ML ERA-5 like file
 # -----------------------------------------
