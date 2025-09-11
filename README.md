@@ -21,7 +21,7 @@ tar -xzvf checkpoint.tar.gz
 cd ..
 ```
 
-## 3. Excute the workflow
+## 3. Execute the workflow
 ```bash
 cd <dir_name>/GenCast-FP
 bash fm_gencast.sh
