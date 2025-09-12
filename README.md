@@ -29,7 +29,7 @@ The wrapper script needs to be run using sbatch to utilize GPU resources. The sc
 * -o: output directory, defaults to current working directory if not specified. Files will be placed under a subdir of this directory, called outputs/. Three directories will be housed in outputs:
   * FP2E: GEOS-FP data converted to ERA5, output of preprocessing step.
   * GenCastRaw: Raw prediction NetCDF files, representing one 15-day rollout per file.
-  * CF: Postprocessed 15-day rollouts, 1 rollout per 12-hour slice (30 outputs in total). Postprocessed data is separated into subdirectories based on year, month, and day of the start of the rollout (so a rollout on 2024-12-01 will have 30 files in a subfolder with a name like: Y2024/M12/D01). Postprocessed data contains ensemble mean.
+  * CF: Postprocessed 15-day rollouts, 1 rollout per 12-hour slice (30 outputs in total, 2 will be "initial" since they are on the start date, and the rest will be predictions from that start date). Postprocessed data is separated into subdirectories based on year, month, and day of the start of the rollout (so a rollout on 2024-12-01 will have 30 files in a subfolder with a name like: Y2024/M12/D01). Postprocessed data contains ensemble mean.
 
 Below is an example, using a start date of 12/01/2024 and an end date of 12/02/2024 (thus 2 15-day rollouts will be generated). 
 ```bash
