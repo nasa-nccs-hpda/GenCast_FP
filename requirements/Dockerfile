@@ -27,9 +27,8 @@ RUN /usr/local/bin/micromamba create -y -n esmf -c conda-forge \
 ENV PATH=/opt/micromamba/envs/esmf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/bin
 ENV LD_LIBRARY_PATH=/opt/micromamba/envs/esmf/lib
 
-# --- Python deps (these run inside the esmf env’s python) ---
+# --- Python deps (inside the esmf env’s Python) ---
 RUN python -c "import sys; print('Using Python:', sys.executable)"
-# Ensure numpy is present for f2py
 RUN python -m pip install --no-cache-dir --upgrade numpy
 
 # GraphCast / JAX / IO deps
@@ -37,20 +36,21 @@ RUN python -m pip install --no-cache-dir https://github.com/deepmind/graphcast/a
 RUN python -m pip install --no-cache-dir --upgrade "jax[cuda12]"
 RUN python -m pip install --no-cache-dir --upgrade xarray netCDF4 h5netcdf IPython
 
+# --- Hugging Face client (for subdir download) ---
+RUN python -m pip install --no-cache-dir --upgrade huggingface_hub hf_transfer
+ENV HF_HUB_ENABLE_HF_TRANSFER=1
+
 # --- Clone your repo and compile the Fortran extension ---
-# Customize these build args to your repo
 ARG REPO_URL="https://github.com/nasa-nccs-hpda/GenCast_FP.git"
-ARG REPO_REF="deployment-operations"  # or a specific commit/branch/tag
+ARG REPO_REF="deployment-operations"
 WORKDIR /opt/GenCast_FP
 RUN git clone --depth 1 --branch ${REPO_REF} ${REPO_URL} /opt/GenCast_FP
 
-# Compile eta2xprs.F90 into eta2xprs_.so for CPython 3.10
 WORKDIR /opt/GenCast_FP/gencast_fp/preprocess
-# f2py will place eta2xprs_.cpython-310-...so in this directory
 RUN python -c "import numpy as _; print('NumPy:', _.__version__)" && \
     python -m numpy.f2py -c -m eta2xprs_ eta2xprs.F90 only: eta2xprs
 
-# Sanity: import the compiled module at build time
+# Sanity check the extension
 ENV PYTHONPATH=/opt/GenCast_FP
 RUN python - <<'PY'
 import importlib
@@ -58,9 +58,40 @@ m = importlib.import_module("gencast_fp.preprocess.eta2xprs_")
 print("Built extension OK:", m.__name__)
 PY
 
-# (optional) place checkpoints/stats and point QEFM_CORE_DIR there
-# ENV QEFM_CORE_DIR=/opt/qefm-core
-# ... add a snapshot_download or COPY step if you want to bake assets in
+# --- Pull only the `gencast/` folder from qefm-core ---
+ARG HF_QEFM_REPO="nasa-cisto-data-science-group/qefm-core"
+ARG HF_QEFM_REV="main"          # optionally pin a tag or commit SHA
+ARG HF_TOKEN=""                 # set if the repo is private
+ENV HUGGINGFACE_HUB_TOKEN=${HF_TOKEN}
+
+# Target location expected by the code
+ENV QEFM_CORE_DIR=/opt/qefm-core
+RUN mkdir -p "${QEFM_CORE_DIR}"
+
+# Download just the subdirectory
+RUN python - <<'PY'
+import os
+from huggingface_hub import snapshot_download
+
+repo_id  = os.environ.get("HF_QEFM_REPO", "nasa-cisto-data-science-group/qefm-core")
+revision = os.environ.get("HF_QEFM_REV", "main")
+token    = os.environ.get("HUGGINGFACE_HUB_TOKEN") or None
+out_dir  = os.environ["QEFM_CORE_DIR"]
+
+print(f"[hf] Downloading {repo_id}@{revision} (only gencast/**) -> {out_dir}")
+snapshot_download(
+    repo_id=repo_id,
+    revision=revision,
+    local_dir=out_dir,
+    local_dir_use_symlinks=False,
+    token=token,
+    allow_patterns=["gencast/**"],  # only the subdir we need
+    ignore_patterns=["*.md", "*.ipynb", ".gitattributes", ".gitignore"]
+)
+PY
+
+# Make the path discoverable to your app
+ENV GENECAST_FP_QEFM_GENCast_DIR=${QEFM_CORE_DIR}/gencast
 
 HEALTHCHECK NONE
 ENTRYPOINT [""]

@@ -19,7 +19,7 @@ A version of this container is located at (move later to the project space):
 ### All Arguments Here
 
 ```bash
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP -B /discover/nobackup/jacaraba /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py -h
+singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP -B /discover/nobackup/jacaraba /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py -h
 ```
 
 #### Preprocessing
@@ -27,6 +27,18 @@ singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCas
 ```bash
 singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP -B /discover/nobackup/jacaraba /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py preprocess --start_date 2024-12-01 --end_date 2024-12-01 --outdir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_run
 ```
+
+From the container:
+
+```bash
+singularity exec -B /discover/nobackup/jacaraba,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix python /opt/GenCast_FP/gencast_fp/view/gencast_fp_cli.py preprocess --start_date 2024-12-01 --end_date 2024-12-01 --outdir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_run_v2
+```
+
+```bash
+singularity exec -B /discover/nobackup/jacaraba,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix python /opt/GenCast_FP/gencast_fp/view/gencast_fp_cli.py predict --start_date 2024-12-01 --end_date 2024-12-01 --input_dir  /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_run_v2 --out_dir  /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_prediction_v2
+```
+
+
 
 #### Predict
 
