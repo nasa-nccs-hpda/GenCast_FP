@@ -48,7 +48,7 @@ RUN git clone --depth 1 --branch ${REPO_REF} ${REPO_URL} /opt/GenCast_FP
 WORKDIR /opt/GenCast_FP/gencast_fp/preprocess
 # f2py will place eta2xprs_.cpython-310-...so in this directory
 RUN python -c "import numpy as _; print('NumPy:', _.__version__)" && \
-    python -m numpy.f2py -c -m eta2xprs_ eta2xprs.F90
+    python -m numpy.f2py -c -m eta2xprs_ eta2xprs.F90 only: eta2xprs
 
 # Sanity: import the compiled module at build time
 ENV PYTHONPATH=/opt/GenCast_FP

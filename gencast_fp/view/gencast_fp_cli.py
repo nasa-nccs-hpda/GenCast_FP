@@ -4,7 +4,7 @@ import logging
 import argparse
 
 from gencast_fp.preprocess.fp2e5 import run_preprocess
-from gencast_fp.predict.predict_gencast import run_predict
+from gencast_fp.prediction.predict_gencast import run_predict
 
 
 # -----------------------------------------------------------------------------
