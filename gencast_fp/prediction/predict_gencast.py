@@ -230,6 +230,13 @@ def run_predict(
     return out_file
 
 
+def run_predict_multiday(xxxxxx):
+
+    for i in range(1, 2):
+        print("lol")
+    return
+
+
 if __name__ == "__main__":
     # Optional standalone CLI for this module
     import argparse

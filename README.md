@@ -7,7 +7,7 @@ This workflow is to generate GenCast predictions with GEOS-FP as inputs. Follow 
 ### Downloading the Container
 
 ```bash
-singularity build --sandbox gencast-fp-latest docker://nasanccs/gencast-fp:latest
+singularity build --sandbox gencast-fp-latest-fix docker://nasanccs/gencast-fp:latest
 ```
 
 A version of this container is located at (move later to the project space):
@@ -50,7 +50,7 @@ to your username or desired locations, the important portion is the PYTHONPATH s
 
 ```bash
 Predict
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B /discover/nobackup/jacaraba /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/prediction/predict_gencast.py --date "2024-12-01" --input_dir  /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_run --out_dir  /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_prediction
+singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B /discover/nobackup/jacaraba /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/prediction/predict_gencast.py --start_date 2024-12-01 --end_date 2024-12-01 --input_dir  /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_run --out_dir  /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_prediction
 ```
 ---
 

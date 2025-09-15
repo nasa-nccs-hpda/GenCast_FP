@@ -51,8 +51,17 @@ def main():
     # Predict
     predict_args = sub.add_parser("predict")
     predict_args.add_argument(
-        "--date", "-s", required=True, type=str,
-        help="Date to forecast (YYYY-MM-DD)")
+        "--start_date",
+        type=str,
+        required=True,
+        help="Start date to process (YYYY-MM-DD)",
+    )
+    predict_args.add_argument(
+        "--end_date",
+        type=str,
+        required=True,
+        help="End date to process (YYYY-MM-DD)",
+    )
     predict_args.add_argument(
         "--input_dir", "-i", required=True, type=str,
         help="Preprocessed input directory")
@@ -91,7 +100,7 @@ def main():
     elif args.cmd == "predict":
         logging.info("Starting prediction")
         out_path = run_predict(
-            date=args.date,
+            date=args.start_date, # TODO: this will change once we include multiday function
             input_dir=args.input_dir,
             out_dir=args.out_dir,
             ckpt_path=args.ckpt,
