@@ -4,7 +4,8 @@ import logging
 import argparse
 
 from gencast_fp.preprocess.fp2e5 import run_preprocess
-from gencast_fp.prediction.predict_gencast import run_predict
+from gencast_fp.prediction.predict_gencast import \
+    run_predict_multiday
 
 
 # -----------------------------------------------------------------------------
@@ -99,8 +100,9 @@ def main():
 
     elif args.cmd == "predict":
         logging.info("Starting prediction")
-        out_path = run_predict(
-            date=args.start_date, # TODO: this will change once we include multiday function
+        out_path = run_predict_multiday(
+            start_date=args.start_date,
+            end_date=args.end_date,
             input_dir=args.input_dir,
             out_dir=args.out_dir,
             ckpt_path=args.ckpt,

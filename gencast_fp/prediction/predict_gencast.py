@@ -223,10 +223,42 @@ def run_predict(
     return out_file
 
 
-def run_predict_multiday(xxxxxx):
+def run_predict_multiday(
+    start_date: str,
+    end_date: str,
+    input_dir: str,
+    out_dir: str,
+    ckpt_path: Optional[str] = None,
+    res_value: float = 1.0,
+    nsteps: int = 30,  # 15-day rollout (12h steps)
+    ensemble_members: int = 8,
+):
+    """Predict multiple days' worth of rollouts.
+    Calls run_predict for each day in the start_date and end_date range."""
+    #
+    start_date = np.datetime64(start_date)
+    end_date = np.datetime64(end_date)
+    date_range = np.arange(
+        start_date,
+        end_date + np.timedelta64(1, 'D'),
+        dtype='datetime64[D]'
+    )
 
-    for i in range(1, 2):
-        print("lol")
+    for current_date in date_range:
+
+        logging.info("======================================================")
+        logging.info(f"Running prediction on date: {current_date}")
+        out_fn = run_predict(
+            current_date,
+            input_dir,
+            out_dir,
+            ckpt_path,
+            res_value,
+            nsteps,
+            ensemble_members,
+        )
+        logging.info(f"Prediction saved to file: {out_fn}")
+        logging.info("======================================================")
     return
 
 
