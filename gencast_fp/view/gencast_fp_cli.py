@@ -4,6 +4,7 @@ import logging
 import argparse
 
 from gencast_fp.preprocess.fp2e5 import run_preprocess
+from gencast_fp.predict.predict_gencast import run_predict
 
 
 # -----------------------------------------------------------------------------
@@ -49,17 +50,24 @@ def main():
 
     # Predict
     predict_args = sub.add_parser("predict")
-    predict_args.add_argument("--ckpt", required=False)
-    predict_args.add_argument("--wfs", required=False)
-    predict_args.add_argument("--sci", default=None)
-    predict_args.add_argument("--out-dir", default="pred_out")
-    predict_args.add_argument("--batch-size", type=int, default=128)
-    predict_args.add_argument("--num-workers", type=int, default=4)
-    predict_args.add_argument("--seed", type=int, default=42)
-    predict_args.add_argument("--devices", type=int, default=1)
-    predict_args.add_argument("--precision", type=int, default=32)
-    predict_args.add_argument("--save-pngs", type=int, default=0)
-    predict_args.add_argument("--max-pngs", type=int, default=0)
+    predict_args.add_argument(
+        "--date", "-s", required=True, type=str,
+        help="Date to forecast (YYYY-MM-DD)")
+    predict_args.add_argument(
+        "--input_dir", "-i", required=True, type=str,
+        help="Preprocessed input directory")
+    predict_args.add_argument(
+        "--out_dir", "-o", required=True, type=str,
+        help="Where to write predictions")
+    predict_args.add_argument(
+        "--ckpt", type=str, default=None,
+        help="Path to GenCast .npz checkpoint")
+    predict_args.add_argument(
+        "--nsteps", type=int, default=30)
+    predict_args.add_argument(
+        "--res", type=float, default=1.0)
+    predict_args.add_argument(
+        "--ensemble", type=int, default=8)
 
     # Postprocess
     predict_args = sub.add_parser("postprocess")
@@ -80,12 +88,24 @@ def main():
             args.expid
         )
 
-    #elif args.cmd == "predict":
-    #    pipeline.predict(args)
-    #elif args.cmd == "detect":
-    #    pipeline.detect(args)
-    #else:
-    #    raise SystemExit("Unknown command")
+    elif args.cmd == "predict":
+        logging.info("Starting prediction")
+        out_path = run_predict(
+            date=args.date,
+            input_dir=args.input_dir,
+            out_dir=args.out_dir,
+            ckpt_path=args.ckpt,
+            res_value=args.res,
+            nsteps=args.nsteps,
+            ensemble_members=args.ensemble,
+        )
+        logging.info(f"Prediction saved: {out_path}")
+
+    elif args.cmd == "postprocess":
+        logging.info("Postprocess not implemented yet")
+
+    else:
+        raise SystemExit("Unknown command")
 
     logging.info(f'Took {(time.time()-timer)/60.0:.2f} min.')
 
