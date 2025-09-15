@@ -38,6 +38,10 @@ from graphcast import denoiser
 from graphcast import nan_cleaning
 import os
 
+import warnings
+
+warnings.filterwarnings("ignore")
+
 parser = argparse.ArgumentParser(description="GenCast Mini Prediction")
 parser.add_argument(
     "--date", "-s", type=str, default="2024-12-01", help="Date to forecast"
@@ -49,7 +53,6 @@ parser.add_argument("--out_dir", "-o", type=str, help="Output directory")
 args = parser.parse_args()
 # Set up input directory and file
 date_str = args.date
-print("date_str:\n", date_str, "\n")
 
 
 # Set up input directory and file
@@ -77,7 +80,6 @@ out_file = os.path.join(out_dir, out_file_value)
 
 # Get the directory of the current script
 script_dir = os.path.dirname(os.path.abspath(__name__))
-print("script_dir:\n", script_dir, "\n")
 
 
 latent_value_options = [int(2**i) for i in range(4, 10)]
@@ -135,10 +137,8 @@ else:
     params_file_value = "GenCast 1p0deg Mini <2019.npz"
     relative_params_file = "../../checkpoints/gencast/gencast-params-GenCast_1p0deg_Mini_<2019.npz"
     absolute_path = os.path.join(script_dir, relative_params_file)
-    print("absolute_path:\n", absolute_path, "\n")
     params_file = absolute_path
     with open(params_file, "rb") as f:
-        print(params_file)
         ckpt = checkpoint.load(f, gencast.CheckPoint)
     params = ckpt.params
     state = {}
@@ -176,15 +176,8 @@ def data_valid_for_model(file_name: str, params_file_name: str):
     return res_matches and source_matches
 
 
-# @title Load weather data
-# dataset_dir = "/discover/nobackup/jli30/GenCast_FP/output_test"
-# dataset_file_value = f"gencast-dataset-source-geos_date-2024-12-01_res-1.0_levels-13_steps-20.nc"
-# dataset_file = os.path.join(dataset_dir, dataset_file_value)
-print("dataset_file_value:\n", dataset_file_value, "\n")
-# with gcs_bucket.blob(dir_prefix + f"dataset/{dataset_file_value}").open("rb") as f:
 with open(dataset_file, "rb") as f:
     example_batch = xarray.load_dataset(f).compute()
-##example_batch = xarray.open_dataset(dataset_file)
 
 assert example_batch.dims["time"] >= 3  # 2 for input, >=1 for targets
 
@@ -199,8 +192,6 @@ print(
     )
 )
 
-# print(example_batch['2m_temperature'].isel(time=0).squeeze().to_numpy())
-##example_batch
 # @title Extract training and eval data
 
 train_inputs, train_targets, train_forcings = (
@@ -220,14 +211,6 @@ eval_inputs, eval_targets, eval_forcings = (
         **dataclasses.asdict(task_config),
     )
 )
-
-print("All Examples:  ", example_batch.dims.mapping)
-print("Train Inputs:  ", train_inputs.dims.mapping)
-print("Train Targets: ", train_targets.dims.mapping)
-print("Train Forcings:", train_forcings.dims.mapping)
-print("Eval Inputs:   ", eval_inputs.dims.mapping)
-print("Eval Targets:  ", eval_targets.dims.mapping)
-print("Eval Forcings: ", eval_forcings.dims.mapping)
 
 # @title Load normalization data
 relative_diffs_file = (
@@ -331,13 +314,9 @@ run_forward_jitted = jax.jit(
 run_forward_pmap = xarray_jax.pmap(run_forward_jitted, dim="sample")
 
 
-print(f"Number of local devices {len(jax.local_devices())}")
+print(f"Number of local devices: {len(jax.local_devices())}")
 
 # @title Autoregressive rollout (loop in python)
-
-print("Inputs:  ", eval_inputs.dims.mapping)
-print("Targets: ", eval_targets.dims.mapping)
-print("Forcings:", eval_forcings.dims.mapping)
 
 num_ensemble_members = 8  # @param int
 rng = jax.random.PRNGKey(0)
@@ -363,6 +342,7 @@ for chunk in rollout.chunked_prediction_generator_multiple_runs(
     pmap_devices=jax.local_devices(),
 ):
     chunks.append(chunk)
+    print(f"Chunk #{len(chunks)+1} done.")
 predictions = xarray.combine_by_coords(chunks)
 predictions.to_netcdf(out_file)
-print("Predictions computed for 10 days out_file:\n", out_file, "\n")
+print("Predictions computed for 15 days, saved to:\n", out_file, "\n")

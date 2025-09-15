@@ -7,6 +7,10 @@ import xesmf as xe
 from fp_to_era5 import *
 import argparse
 
+import warnings
+
+warnings.filterwarnings("ignore")
+
 
 def get_era5_lsm():
     lsm_file = "/css/era5/static/era5_static-allvar.nc"
@@ -48,7 +52,7 @@ def expand_dims(ds, steps):
 
 
 def to_gencast_input(ds):
-    nsteps = 32
+    nsteps = 32  # 15-day behavior is hard-coded
     GRAV = 9.80665
 
     levs = np.array(
@@ -123,13 +127,6 @@ def to_gencast_input(ds):
     # change time coordinate to timedelta
     ds["time"] = ds["time"] - ds["time"].isel(time=0)
 
-    # # add land_sea_mask
-    # file = f"/discover/nobackup/projects/QEFM/data/FMGenCast/12hr/Y2024/gencast-dataset-source-era5_date-{date_str}_res-1.0_levels-13_steps-20.nc"
-    # ds_lsm = xr.open_dataset(file)
-    # ds['land_sea_mask'] = ds_lsm['land_sea_mask']
-    # # using the sea_surface_temperature from the original dataset
-    # ds['sea_surface_temperature'] = ds_lsm['sea_surface_temperature']
-
     # drop the time dimension for geopotential_at_surface
     ds["geopotential_at_surface"] = (
         ds["geopotential_at_surface"].isel(time=0).drop_vars(["time"])
@@ -179,6 +176,8 @@ def main():
         freq="12h",
     )
 
+    print(f"Dates to process: {dates}")
+
     outdir = args.outdir
     expid = args.expid
 
@@ -187,9 +186,9 @@ def main():
         daily_Ex = []
         daily_Ep = []
         for dt in dates:
-            print(dt)
+            print(f"preprocessing GEOS-FP date: {dt}")
             Files = discover_files(dt, outdir=outdir, expid=expid)
-            print(Files)
+            # print(Files)
             sst = get_era5_sst(Files["e5_Ex"])
 
             fp_Nx = xr.open_dataset(Files["fp_Nx"], engine="netcdf4")
@@ -233,6 +232,7 @@ def main():
         ds_out.to_netcdf(
             out_file, mode="w", format="NETCDF4", engine="netcdf4"
         )
+    print("Finished preprocessing all dates.")
 
 
 if __name__ == "__main__":
