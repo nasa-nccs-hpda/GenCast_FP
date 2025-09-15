@@ -68,6 +68,7 @@ def run_predict(
     res_value: float = 1.0,
     nsteps: int = 30,  # 15-day rollout (12h steps)
     ensemble_members: int = 8,
+    container_meta: str = '/opt/qefm-core/gencast'
 ) -> str:
     """
     Run GenCast prediction for a single date.
@@ -95,31 +96,23 @@ def run_predict(
 
     # Resolve checkpoints and stats
     # Default to repo-relative checkpoints if ckpt_path not given.
+
     if ckpt_path is None:
         # Expect this file structure:
         #   gencast_fp/predict/predict.py (this file)
         #   ../../checkpoints/gencast/gencast-params-GenCast_1p0deg_Mini_<2019.npz
-        script_dir = os.path.dirname(os.path.abspath(__file__))
         ckpt_path = os.path.join(
-            script_dir,
-            "../../checkpoints/gencast/gencast-params-GenCast_1p0deg_Mini_<2019.npz",
+            container_meta,
+            "gencast-params-GenCast_1p0deg_Mini_<2019.npz"
         )
     diffs_file = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "../../checkpoints/gencast/gencast-stats-diffs_stddev_by_level.nc",
-    )
+        container_meta, "gencast-stats-diffs_stddev_by_level.nc")
     mean_file = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "../../checkpoints/gencast/gencast-stats-mean_by_level.nc",
-    )
+        container_meta, "gencast-stats-mean_by_level.nc")
     stddev_file = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "../../checkpoints/gencast/gencast-stats-stddev_by_level.nc",
-    )
+        container_meta, "gencast-stats-stddev_by_level.nc")
     min_file = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "../../checkpoints/gencast/gencast-stats-min_by_level.nc",
-    )
+        container_meta, "gencast-stats-min_by_level.nc")
 
     logging.info(f"Checkpoint: {ckpt_path}")
     logging.info("Loading checkpoint and configs...")
