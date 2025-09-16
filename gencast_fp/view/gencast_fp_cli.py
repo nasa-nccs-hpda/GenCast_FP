@@ -10,7 +10,7 @@ from gencast_fp.prediction.predict_gencast import (
     run_predict_multiday,
     load_ckpt_files,
 )
-from gencast_fp.postprocess import run_postprocess_multiday
+from gencast_fp.postprocess.gencast_cf import run_postprocess_multiday
 
 # -----------------------------------------------------------------------------
 # main
@@ -129,11 +129,6 @@ def main():
         )
 
     elif args.cmd == "run":
-
-        #pp_dir = Path(args.preprocess_dir)
-        #pred_dir = Path(args.predict_dir)
-        #pp_dir.mkdir(parents=True, exist_ok=True)
-        #pred_dir.mkdir(parents=True, exist_ok=True)
 
         # Setting up directories
         preprocess_output_dir = os.path.join(args.output_dir, 'preprocessed')
