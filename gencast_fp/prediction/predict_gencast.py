@@ -131,7 +131,7 @@ def run_predict(
 
     logging.info("Loading dataset and normalization stats...")
     with open(dataset_file, "rb") as f:
-        example_batch = xarray.load_dataset(f).compute()
+        example_batch = xarray.load_dataset(f).compute() # TODO: add , decode_cf=False if it does not work
     assert example_batch.dims["time"] >= 3
 
     with open(diffs_file, "rb") as f:

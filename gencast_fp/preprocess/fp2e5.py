@@ -125,8 +125,9 @@ def to_gencast_input(ds):
     for var in list(ds.data_vars) + ["datetime"]:
         ds[var] = ds[var].expand_dims("batch")
 
+    # TODO: Commenting it for now to see if GenCast complains
     # change time coordinate to timedelta
-    ds["time"] = ds["time"] - ds["time"].isel(time=0)
+    # ds["time"] = ds["time"] - ds["time"].isel(time=0)
 
     # # add land_sea_mask
     # file = f"/discover/nobackup/projects/QEFM/data/FMGenCast/12hr/Y2024/gencast-dataset-source-era5_date-{date_str}_res-1.0_levels-13_steps-20.nc"
