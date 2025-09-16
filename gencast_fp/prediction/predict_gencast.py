@@ -140,6 +140,10 @@ def run_predict(
     input_file = load_dataset(input_dir, date, res_value, nsteps)
     out_file = prepare_out_dir(out_dir, date, res_value, nsteps)
 
+    # Skip if file already exists
+    if os.path.exists(out_file):
+        logging.info(f'Skipping {out_file}, prediction already exists.')
+
     # Extract model info and task info from checkpoint
     ckpt = ckpt_and_stats["ckpt"]
     params = ckpt.params
@@ -295,7 +299,7 @@ def run_predict_multiday(
         )
         logging.info(f"Prediction saved to file: {out_fn}")
         logging.info("======================================================")
-    return
+    return out_dir
 
 
 if __name__ == "__main__":
