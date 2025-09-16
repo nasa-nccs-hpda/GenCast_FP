@@ -2,6 +2,7 @@ import sys
 import time
 import logging
 import argparse
+from pathlib import Path
 
 from gencast_fp.preprocess.fp2e5 import run_preprocess
 from gencast_fp.prediction.predict_gencast import (
@@ -14,100 +15,81 @@ from gencast_fp.prediction.predict_gencast import (
 # main
 # -----------------------------------------------------------------------------
 def main():
-
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
-    # Process command-line args.
     parser = argparse.ArgumentParser(description="GenCast-FP Processing")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    # Train
-    preprocess_args = sub.add_parser("preprocess")
-    preprocess_args.add_argument(
-        "--start_date",
-        type=str,
-        required=True,
-        help="Start date to process (YYYY-MM-DD)",
-    )
-    preprocess_args.add_argument(
-        "--end_date",
-        type=str,
-        required=True,
-        help="End date to process (YYYY-MM-DD)",
-    )
-    preprocess_args.add_argument(
-        "--outdir",
-        type=str,
-        default="./output/",
-        help="Output directory for the converted files",
-    )
-    preprocess_args.add_argument(
-        "--expid",
-        type=str,
-        default="f5295",
-        help="Experiment ID for the output files",
-    )
+    # ---------- preprocess ----------
+    preprocess_args = sub.add_parser("preprocess", help="Run preprocessing only")
+    preprocess_args.add_argument("--start_date", type=str, required=True, help="YYYY-MM-DD")
+    preprocess_args.add_argument("--end_date",   type=str, required=True, help="YYYY-MM-DD")
+    preprocess_args.add_argument("--outdir",     type=str, default="./output/preprocess",
+                                 help="Output directory for preprocessed files")
+    preprocess_args.add_argument("--expid",      type=str, default="f5295",
+                                 help="Experiment ID for the output files")
 
-    # Predict
-    predict_args = sub.add_parser("predict")
-    predict_args.add_argument(
-        "--start_date",
-        type=str,
-        required=True,
-        help="Start date to process (YYYY-MM-DD)",
-    )
-    predict_args.add_argument(
-        "--end_date",
-        type=str,
-        required=True,
-        help="End date to process (YYYY-MM-DD)",
-    )
-    predict_args.add_argument(
-        "--input_dir",
-        "-i",
-        required=True,
-        type=str,
-        help="Preprocessed input directory",
-    )
-    predict_args.add_argument(
-        "--out_dir",
-        "-o",
-        required=True,
-        type=str,
-        help="Where to write predictions",
-    )
-    predict_args.add_argument(
-        "--ckpt",
-        type=str,
-        default=None,
-        help="Path to GenCast .npz checkpoint",
-    )
-    predict_args.add_argument("--nsteps", type=int, default=30)
-    predict_args.add_argument("--res", type=float, default=1.0)
-    predict_args.add_argument("--ensemble", type=int, default=8)
+    # ---------- predict ----------
+    predict_args = sub.add_parser("predict", help="Run prediction only")
+    predict_args.add_argument("--start_date", type=str, required=True, help="YYYY-MM-DD")
+    predict_args.add_argument("--end_date",   type=str, required=True, help="YYYY-MM-DD")
+    predict_args.add_argument("--input_dir",  "-i", required=True, type=str,
+                              help="Preprocessed input directory")
+    predict_args.add_argument("--out_dir",    "-o", required=True, type=str,
+                              help="Where to write predictions")
+    predict_args.add_argument("--ckpt",       type=str, default=None,
+                              help="Path to GenCast .npz checkpoint (overrides container default)")
+    predict_args.add_argument("--nsteps",     type=int, default=30)
+    predict_args.add_argument("--res",        type=float, default=1.0)
+    predict_args.add_argument("--ensemble",   type=int, default=8)
 
-    # Postprocess
-    predict_args = sub.add_parser("postprocess")
-    predict_args.add_argument("--ckpt", required=False)
+    # ---------- postprocess ----------
+    post_args = sub.add_parser("postprocess", help="Run postprocessing only")
+    post_args.add_argument("--ckpt", required=False)
+
+    # ---------- run (all-in-one) ----------
+    run_args = sub.add_parser("run", help="Run preprocess → predict → postprocess")
+    run_args.add_argument("--start_date", type=str, required=True, help="YYYY-MM-DD")
+    run_args.add_argument("--end_date",   type=str, required=True, help="YYYY-MM-DD")
+
+    run_args.add_argument("--preprocess_dir", type=str, default="./output/preprocess",
+                          help="Directory for preprocess outputs (becomes predict input)")
+    run_args.add_argument("--predict_dir",    type=str, default="./output/predictions",
+                          help="Directory for prediction outputs")
+    run_args.add_argument("--expid",          type=str, default="f5295",
+                          help="Experiment ID used during preprocessing")
+
+    run_args.add_argument("--ckpt",     type=str, default=None,
+                          help="Path to GenCast .npz checkpoint (overrides container default)")
+    run_args.add_argument("--nsteps",   type=int, default=30)
+    run_args.add_argument("--res",      type=float, default=1.0)
+    run_args.add_argument("--ensemble", type=int, default=8)
+
+    run_args.add_argument("--skip_preprocess", action="store_true",
+                          help="Skip preprocess (assumes --preprocess_dir already exists)")
+    run_args.add_argument("--skip_predict",    action="store_true",
+                          help="Skip predict")
+    run_args.add_argument("--skip_post",       action="store_true",
+                          help="Skip postprocess")
+    run_args.add_argument("--container_meta",  type=str, default="/opt/qefm-core/gencast",
+                          help="Where to load default ckpt/configs if --ckpt not passed")
 
     args = parser.parse_args()
+    t0 = time.time()
 
-    # Setup timer to monitor script execution time
-    timer = time.time()
-
-    # Execute pipeline scripts
     if args.cmd == "preprocess":
         logging.info("Starting preprocessing")
         run_preprocess(args.start_date, args.end_date, args.outdir, args.expid)
 
     elif args.cmd == "predict":
         logging.info("Starting prediction...")
-        logging.info("Loading checkpoint and configs...")
-        container_meta = "/opt/qefm-core/gencast"
-        ckpt_and_stats = load_ckpt_files(container_meta)
-        logging.info("Loaded model checkpoint, predicting...")
+        if args.ckpt:
+            ckpt_and_stats = {"ckpt": args.ckpt}
+        else:
+            ckpt_and_stats = load_ckpt_files("/opt/qefm-core/gencast")
+
         out_path = run_predict_multiday(
             start_date=args.start_date,
             end_date=args.end_date,
@@ -124,12 +106,53 @@ def main():
     elif args.cmd == "postprocess":
         logging.info("Postprocess not implemented yet")
 
+    elif args.cmd == "run":
+        pp_dir = Path(args.preprocess_dir)
+        pred_dir = Path(args.predict_dir)
+        pp_dir.mkdir(parents=True, exist_ok=True)
+        pred_dir.mkdir(parents=True, exist_ok=True)
+
+        # 1) Preprocess
+        if not args.skip_preprocess:
+            logging.info(f"[1/3] Preprocess → {pp_dir}")
+            run_preprocess(
+                args.start_date, args.end_date, str(pp_dir), args.expid)
+        else:
+            logging.info("[1/3] Skipping preprocess")
+
+        # 2) Predict
+        if not args.skip_predict:
+            logging.info("[2/3] Prediction")
+            if args.ckpt:
+                ckpt_and_stats = {"ckpt": args.ckpt}
+            else:
+                ckpt_and_stats = load_ckpt_files(args.container_meta)
+
+            out_path = run_predict_multiday(
+                start_date=args.start_date,
+                end_date=args.end_date,
+                input_dir=str(pp_dir),
+                out_dir=str(pred_dir),
+                res_value=args.res,
+                nsteps=args.nsteps,
+                ensemble_members=args.ensemble,
+                container_meta=args.container_meta,
+                ckpt_and_stats=ckpt_and_stats,
+            )
+            logging.info(f"Prediction saved: {out_path}")
+        else:
+            logging.info("[2/3] Skipping predict")
+
+        # 3) Postprocess
+        if not args.skip_post:
+            logging.info("[3/3] Postprocess (not implemented yet)")
+        else:
+            logging.info("[3/3] Skipping postprocess")
+
     else:
         raise SystemExit("Unknown command")
 
-    logging.info(f"Took {(time.time()-timer)/60.0:.2f} min.")
-
-    return
+    logging.info(f"Took {(time.time()-t0)/60.0:.2f} min.")
 
 
 # -----------------------------------------------------------------------------

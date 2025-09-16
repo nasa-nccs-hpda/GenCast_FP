@@ -93,5 +93,10 @@ PY
 # Make the path discoverable to your app
 ENV GENECAST_FP_QEFM_GENCast_DIR=${QEFM_CORE_DIR}/gencast
 
+# Make a short command "gencast-fp"
+RUN printf '#!/usr/bin/env bash\nexec python /opt/GenCast_FP/gencast_fp/view/gencast_fp_cli.py "$@"\n' \
+    > /usr/local/bin/gencast-fp && \
+    chmod +x /usr/local/bin/gencast-fp
+
 HEALTHCHECK NONE
 ENTRYPOINT [""]
