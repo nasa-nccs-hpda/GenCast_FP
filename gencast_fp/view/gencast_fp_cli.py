@@ -58,7 +58,7 @@ def main():
                         help="Directory with GenCast predictions")
     post_args.add_argument("--output_dir", type=str, default="./output/postprocess",
                         help="Directory for CF-compliant NetCDF outputs")
-    post_args.add_argument("--no_ens_mean", action="store_true",
+    post_args.add_argument("--ens_mean", type=bool, default=True,
                         help="Disable ensemble mean (keep all ensemble members)")
 
     # ---------- run (all-in-one) ----------
@@ -76,6 +76,8 @@ def main():
     run_args.add_argument("--nsteps",   type=int, default=30)
     run_args.add_argument("--res",      type=float, default=1.0)
     run_args.add_argument("--ensemble", type=int, default=8)
+    run_args.add_argument("--ens_mean", type=bool, default=True,
+                        help="Disable ensemble mean (keep all ensemble members)")
 
     run_args.add_argument("--skip_preprocess", action="store_true",
                           help="Skip preprocess (assumes --preprocess_dir already exists)")
@@ -93,7 +95,7 @@ def main():
         logging.info("Starting preprocessing")
 
         run_preprocess(
-            args.start_date, args.end_date, args.out_dir, args.expid)
+            args.start_date, args.end_date, args.output_dir, args.expid)
 
     elif args.cmd == "predict":
 
@@ -108,7 +110,7 @@ def main():
             start_date=args.start_date,
             end_date=args.end_date,
             input_dir=args.input_dir,
-            out_dir=args.out_dir,
+            out_dir=args.output_dir,
             res_value=args.res,
             nsteps=args.nsteps,
             ensemble_members=args.ensemble,
