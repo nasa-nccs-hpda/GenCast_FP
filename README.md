@@ -13,7 +13,8 @@ sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
     --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
     --wrap="module load singularity; singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
     /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix-4 \
-    gencast-fp run --start_date 2024-12-01 --end_date 2024-12-03 --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
+    gencast-fp run --start_date 2024-12-01 --end_date 2024-12-03 \
+    --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
 ```
 
 ## Dependencies
