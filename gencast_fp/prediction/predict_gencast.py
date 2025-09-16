@@ -143,6 +143,7 @@ def run_predict(
     # Skip if file already exists
     if os.path.exists(out_file):
         logging.info(f'Skipping {out_file}, prediction already exists.')
+        return out_file
 
     # Extract model info and task info from checkpoint
     ckpt = ckpt_and_stats["ckpt"]
@@ -328,3 +329,4 @@ if __name__ == "__main__":
         nsteps=args.nsteps,
         ensemble_members=args.ensemble,
     )
+
