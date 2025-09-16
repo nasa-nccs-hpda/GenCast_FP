@@ -131,9 +131,9 @@ def main():
     elif args.cmd == "run":
 
         # Setting up directories
-        preprocess_output_dir = os.path.join(args.output_dir, 'preprocessed')
-        prediction_output_dir = os.path.join(args.output_dir, 'predictions')
-        postprocess_output_dir = os.path.join(args.output_dir, 'postprocessed')
+        preprocess_output_dir = os.path.join(args.output_dir, '1-preprocessed')
+        prediction_output_dir = os.path.join(args.output_dir, '2-predictions')
+        postprocess_output_dir = os.path.join(args.output_dir, '3-postprocessed')
         for edir in [
                     preprocess_output_dir, prediction_output_dir,
                     postprocess_output_dir

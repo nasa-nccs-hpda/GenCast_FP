@@ -2,93 +2,109 @@
 
 This workflow is to generate GenCast predictions with GEOS-FP as inputs. Follow the steps below to set up and run. The workflow currently only works on DISCOVER filesystems.
 
-## New Workflow
+## Quickstart
+
+The following command runs preprocessing, prediction, and postprocessing for a given date
+range using the Discover A100 systems. You will need access to a single GPU to run this workflow.
+Note that the following command can be run from any Discover login node.
+
+```bash
+sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
+    --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
+    --wrap="module load singularity; singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
+    /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix-4 \
+    gencast-fp run --start_date 2024-12-01 --end_date 2024-12-03 --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
+```
+
+## Dependencies
+
+Additional details and flexibility of the commands are listed below.
 
 ### Downloading the Container
 
+If you would like to download the container yourself, you will need to run the following
+command. The latest version has the most up to date changes, while specific releases are
+attached to a given version from the repository.
+
+#### Latest Release
+
 ```bash
-singularity build --sandbox gencast-fp-latest-fix docker://nasanccs/gencast-fp:latest
+singularity build --sandbox gencast-fp-latest docker://nasanccs/gencast-fp:latest
 ```
 
-A version of this container is located at (move later to the project space):
+#### Specific Version
 
 ```bash
-/discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest
+singularity build --sandbox gencast-fp-0.1.0 docker://nasanccs/gencast-fp:0.1.0
 ```
 
-### All Arguments Here
+A version of this container is located at:
 
 ```bash
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP -B /discover/nobackup/jacaraba /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py -h
+/discover/nobackup/projects/QEFM/containers/gencast-fp-latest
 ```
 
-#### Preprocessing
+## Pipeline Details
+
+In addition, individual steps of the pipeline can be run using the container and CLI. Some examples with arguments
+are listed below. The pipeline has 3 steps: preprocess, predict, and postprocess.
+
+### Preprocessing
 
 ```bash
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP -B /discover/nobackup/jacaraba /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py preprocess --start_date 2024-12-01 --end_date 2024-12-01 --outdir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_run
+singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix-4 python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py preprocess -h
+usage: gencast_fp_cli.py preprocess [-h] --start_date START_DATE --end_date END_DATE [--output_dir OUTPUT_DIR] [--expid EXPID]
+
+options:
+  -h, --help            show this help message and exit
+  --start_date START_DATE
+                        YYYY-MM-DD
+  --end_date END_DATE   YYYY-MM-DD
+  --output_dir OUTPUT_DIR
+                        Output directory for preprocessed files
+  --expid EXPID         Experiment ID for the output files
 ```
 
-From the container:
+### Prediction
 
 ```bash
-singularity exec -B /discover/nobackup/jacaraba,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix python /opt/GenCast_FP/gencast_fp/view/gencast_fp_cli.py preprocess --start_date 2024-12-01 --end_date 2024-12-01 --outdir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_run_v2
+singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix-4 python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py predict -h
+usage: gencast_fp_cli.py predict [-h] --start_date START_DATE --end_date END_DATE --input_dir INPUT_DIR --output_dir OUTPUT_DIR [--ckpt CKPT] [--nsteps NSTEPS] [--res RES] [--ensemble ENSEMBLE]
+                                 [--container_meta CONTAINER_META]
+
+options:
+  -h, --help            show this help message and exit
+  --start_date START_DATE
+                        YYYY-MM-DD
+  --end_date END_DATE   YYYY-MM-DD
+  --input_dir INPUT_DIR, -i INPUT_DIR
+                        Preprocessed input directory
+  --output_dir OUTPUT_DIR, -o OUTPUT_DIR
+                        Where to write predictions
+  --ckpt CKPT           Path to GenCast .npz checkpoint (overrides container default)
+  --nsteps NSTEPS
+  --res RES
+  --ensemble ENSEMBLE
+  --container_meta CONTAINER_META
+                        Where to load default ckpt/configs if --ckpt not passed
 ```
 
-```bash
-singularity exec -B /discover/nobackup/jacaraba,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix python /opt/GenCast_FP/gencast_fp/view/gencast_fp_cli.py predict --start_date 2024-12-01 --end_date 2024-12-01 --input_dir  /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_run_v2 --out_dir  /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_prediction_v2
-```
-
-
-
-#### Predict
-
-#### Sandy for Testing Predict
-
-1. Get salloc session
+### Postprocessing
 
 ```bash
-salloc --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 --mem-per-gpu=100G -t 10:00:00
-```
+singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix-4 python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py postprocess -h
+usage: gencast_fp_cli.py postprocess [-h] --start_date START_DATE --end_date END_DATE --input_dir INPUT_DIR --predictions_dir PREDICTIONS_DIR [--output_dir OUTPUT_DIR] [--no_ens_mean]
 
-2. Git Clone (you will need this for now since we are making testing, this wont be needed 
-later after we embed it inside the container)
-
-```bash
-git clone https://github.com/nasa-nccs-hpda/GenCast_FP --branch deployment-operations
-```
-
-3. Run prediction for a single day for now (you change it however you think its appropiate, change the paths
-to your username or desired locations, the important portion is the PYTHONPATH stuff)
-
-```bash
-Predict
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B /discover/nobackup/jacaraba /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/prediction/predict_gencast.py --start_date 2024-12-01 --end_date 2024-12-01 --input_dir  /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_run --out_dir  /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast_prediction
-```
----
-
-## Previous Workflow
-
----
-
-## 1. Clone the Repository on DISCOVER
-**Note: ensure that there is ample space (>100 gb) to run this code. DISCOVER nobackup is ideal.**
-```bash
-mkdir <dir_name>
-cd <dir_name>
-git clone https://github.com/nasa-nccs-hpda/GenCast_FP.git
-cd <dir_name>/GenCast-FP
-```
-
-## 2. Copy checkpoints and ancillary dataset
-```bash
-cd <dir_name>/GenCast-FP/prediction
-cp /discover/nobackup/jli30/GenCast_FP/prediction/checkpoint.tar.gz .
-tar -xzvf checkpoint.tar.gz
-cd ..
-```
-
-## 3. Execute the workflow
-```bash
-cd <dir_name>/GenCast-FP
-bash fm_gencast.sh
+options:
+  -h, --help            show this help message and exit
+  --start_date START_DATE
+                        Start date (YYYY-MM-DD)
+  --end_date END_DATE   End date (YYYY-MM-DD)
+  --input_dir INPUT_DIR
+                        Directory with GEOS inputs (for initial conditions)
+  --predictions_dir PREDICTIONS_DIR
+                        Directory with GenCast predictions
+  --output_dir OUTPUT_DIR
+                        Directory for CF-compliant NetCDF outputs
+  --no_ens_mean         Disable ensemble mean (keep all ensemble members)
 ```
