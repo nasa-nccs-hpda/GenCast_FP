@@ -1,0 +1,222 @@
+import logging
+import argparse
+import xarray as xr
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+
+def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_mean=True):
+    FILL_VALUE = np.float32(1.0e15)
+    fmodel = "FMGenCast"
+
+    ds = ds_org.sel(time=ctime).expand_dims("time")
+
+    # --- time attrs ---
+    dt = pd.to_datetime(ref_date + ctime)
+    HH = dt.strftime("%H"); YYYY = dt.strftime("%Y"); MM = dt.strftime("%m"); DD = dt.strftime("%d")
+    tstamp = dt.strftime("%Y-%m-%dT%H")
+    begin_date = np.int32(f"{YYYY}{MM}{DD}")
+    begin_time = np.int32(dt.hour * 10000)
+    time_increment = np.int32(120000)
+    units = f"hours since {YYYY}-{MM}-{DD} {HH}:00:00"
+
+    ds["time"] = np.float32((ds["time"] - ds["time"]) / np.timedelta64(1, "h"))
+    ds.time.attrs = {
+        "long_name": "time",
+        "units": units,
+        "calendar": "proleptic_gregorian",
+        "begin_date": begin_date,
+        "begin_time": begin_time,
+        "time_increment": time_increment,
+    }
+
+    # --- lat, lon, lev, ensemble ---
+    lats = ds["lat"].values
+    if lats[0] > lats[-1]:
+        ds = ds.sel(lat=slice(None, None, -1))
+    ds.lat.attrs = {"long_name": "latitude", "units": "degrees_north"}
+
+    lons = ds["lon"].values
+    if min(lons) == 0:
+        ds["lon"] = ((ds["lon"] + 180) % 360) - 180
+        ds = ds.sortby(ds.lon)
+    ds.lon.attrs = {"long_name": "longitude", "units": "degrees_east"}
+
+    ds = ds.rename({"level": "lev"})
+    levs = ds["lev"].values.astype(np.float32)
+    ds["lev"] = levs
+    if levs[0] < levs[-1]:
+        ds = ds.sel(lev=slice(None, None, -1))
+    ds.lev.attrs = {"long_name": "pressure_level", "units": "hPa"}
+
+    if "sample" in ds.dims:
+        ds = ds.rename({"sample": "ens"})
+        ds.ens.attrs = {"long_name": "ensemble_member", "units": " "}
+        if ens_mean:
+            ds = ds.mean(dim="ens")
+
+    # --- variable renames + attrs (only if present) ---
+    rename_dict = {
+        "10m_u_component_of_wind": "U10M",
+        "10m_v_component_of_wind": "V10M",
+        "2m_temperature": "T2M",
+        "geopotential": "H",
+        "mean_sea_level_pressure": "SLP",
+        "sea_surface_temperature": "SST",
+        "specific_humidity": "QV",
+        "temperature": "T",
+        "total_precipitation_12hr": "PRECTOT",
+        "u_component_of_wind": "U",
+        "v_component_of_wind": "V",
+        "vertical_velocity": "OMEGA",
+        "geopotential_at_surface": "PHIS",
+    }
+    varMap = {
+        "U10M": {"long_name": "10-meter_eastward_wind", "units": "m s-1"},
+        "V10M": {"long_name": "10-meter_northward_wind", "units": "m s-1"},
+        "T2M":  {"long_name": "2-meter_air_temperature", "units": "K"},
+        "H":    {"long_name": "height", "units": "m"},
+        "SLP":  {"long_name": "sea_level_pressure", "units": "Pa"},
+        "SST":  {"long_name": "sea_surface_temperature", "units": "K"},
+        "QV":   {"long_name": "specific_humidity", "units": "kg kg-1"},
+        "T":    {"long_name": "air_temperature", "units": "K"},
+        "PRECTOT": {"long_name": "total_precipitation", "units": "m"},
+        "U":    {"long_name": "eastward_wind", "units": "m s-1"},
+        "V":    {"long_name": "northward_wind", "units": "m s-1"},
+        "OMEGA":{"long_name": "vertical_pressure_velocity", "units": "Pa s-1"},
+        "PHIS": {"long_name": "surface_geopotential_height", "units": "m+2 s-2"},
+    }
+
+    valid_rename = {k: v for k, v in rename_dict.items() if k in ds.variables}
+    if valid_rename:
+        ds = ds.rename(valid_rename)
+
+    for v in ds.data_vars:
+        if v in varMap:
+            ds[v].attrs = {
+                **varMap[v],
+                "_FillValue": FILL_VALUE,
+                "missing_value": FILL_VALUE,
+                "fmissing_value": FILL_VALUE,
+            }
+
+    # --- globals ---
+    ds.attrs = {
+        "title": f"FMGenCast forecast start at {YYYY}-{MM}-{DD}T12:00:00",
+        "institution": "NASA CISTO Data Science Group",
+        "source": "FMGenCast model output",
+        "Conventions": "CF",
+        "Comment": "NetCDF-4",
+    }
+
+    # --- write ---
+    compression = {"zlib": True, "complevel": 1, "shuffle": True}
+    encoding = {var: compression for var in ds.data_vars}
+
+    if case == "init":
+        fname = f"FMGenCast-initial-geos_date-{tstamp}_res-1.0_levels-13.nc"
+    else:
+        suffix = "_ens-mean.nc" if ens_mean else ".nc"
+        fname = f"FMGenCast-prediction-geos_date-{tstamp}_res-1.0_levels-13{suffix}"
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    ds.to_netcdf(output_dir / fname, encoding=encoding, engine="netcdf4")
+
+
+def run_postprocess_day(geos_dir: str, pred_dir: str, post_out_dir: str,
+                        year: int, month: int, day: int, ens_mean: bool = True) -> None:
+    """Process one day's init (from GEOS) and prediction files into CF NetCDFs."""
+    geos_dir = Path(geos_dir)
+    pred_dir = Path(pred_dir)
+    out_day = Path(post_out_dir) / f"Y{year:04d}" / f"M{month:02d}" / f"D{day:02d}"
+    out_day.mkdir(parents=True, exist_ok=True)
+
+    Y = f"{year:04d}"
+    M = f"{month:02d}"
+    D = f"{day:02d}"
+
+    # Initial conditions (first two steps)
+    init_files = sorted(geos_dir.glob(f"*source-geos*{Y}-{M}-{D}_*.nc"))
+    if init_files:
+        ds_init = xr.open_dataset(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
+        ref_init = np.datetime64(f"{Y}-{M}-{D}T00:00:00")
+        for ctime in ds_init.time.values[:2]:
+            proc_time_step(ds_init, ctime, ref_init, output_dir=out_day, case="init", ens_mean=ens_mean)
+    else:
+        logging.warning(f"No GEOS init files found for {Y}-{M}-{D} in {geos_dir}")
+
+    # Predictions (all steps)
+    pred_files = sorted(pred_dir.glob(f"*geos_date-{Y}-{M}-{D}_*.nc"))
+    if pred_files:
+        ds_pred = xr.open_dataset(pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
+        ref_pred = np.datetime64(f"{Y}-{M}-{D}T12:00:00")
+        for ctime in ds_pred.time.values:
+            proc_time_step(ds_pred, ctime, ref_pred, output_dir=out_day, case="pred", ens_mean=ens_mean)
+    else:
+        logging.warning(f"No prediction files found for {Y}-{M}-{D} in {pred_dir}")
+
+
+def run_postprocess_multiday(
+    start_date: str,
+    end_date: str,
+    geos_dir: str,
+    pred_dir: str,
+    post_out_dir: str,
+    ens_mean: bool = True,
+):
+    """Postprocess multiple days (inclusive) of GenCast outputs into CF-compliant NetCDFs.
+    Calls run_postprocess_day for each day in [start_date, end_date].
+    """
+    start_date = np.datetime64(start_date)
+    end_date   = np.datetime64(end_date)
+    date_range = np.arange(start_date, end_date + np.timedelta64(1, "D"), dtype="datetime64[D]")
+
+    for current_date in date_range:
+        y = int(str(current_date)[:4])
+        m = int(str(current_date)[5:7])
+        d = int(str(current_date)[8:10])
+
+        logging.info("======================================================")
+        logging.info(f"Postprocessing date: {current_date}")
+        run_postprocess_day(
+            geos_dir=geos_dir,
+            pred_dir=pred_dir,
+            post_out_dir=post_out_dir,
+            year=y, month=m, day=d,
+            ens_mean=ens_mean,
+        )
+        logging.info("Done postprocessing.")
+        logging.info("======================================================")
+
+    return post_out_dir
+
+
+if __name__ == "__main__":
+
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
+    parser = argparse.ArgumentParser(description="Convert GenCast outputs to CF-compliant NetCDFs")
+    parser.add_argument("--start_date", type=str, required=True, help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--end_date",   type=str, required=True, help="End date (YYYY-MM-DD)")
+    parser.add_argument("--geos_dir",   type=str, required=True,
+                        help="Directory with GEOS inputs (for initial conditions)")
+    parser.add_argument("--pred_dir",   type=str, required=True,
+                        help="Directory with GenCast predictions")
+    parser.add_argument("--post_out_dir", type=str, default="./output/postprocess",
+                        help="Directory for CF-compliant NetCDF outputs")
+    parser.add_argument("--no_ens_mean", action="store_true",
+                        help="Disable ensemble mean (keep all ensemble members)")
+
+    args = parser.parse_args()
+
+    run_postprocess_multiday(
+        start_date=args.start_date,
+        end_date=args.end_date,
+        geos_dir=args.geos_dir,
+        pred_dir=args.pred_dir,
+        post_out_dir=args.post_out_dir,
+        ens_mean=not args.no_ens_mean,
+    )
