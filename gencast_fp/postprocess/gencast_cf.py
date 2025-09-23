@@ -7,29 +7,33 @@ from pathlib import Path
 
 
 def proc_time_step(
-    ds_org, start_time, ref_date, output_dir: Path, case="init", ens_mean=True
+    ds_org, ctime, ref_date, output_dir: Path, case="init", ens_mean=True
 ):
     FILL_VALUE = np.float32(1.0e15)
     fmodel = "FMGenCast"
 
-    ds = ds_org.sel(time=start_time).expand_dims("time")
+    ds = ds_org.sel(time=ctime).expand_dims("time")
 
     # --- time attrs ---
-    dt = pd.to_datetime(
-        str(ref_date)
-        + pd.Timedelta(pd.to_datetime(start_time) - pd.Timestamp("1970-01-01"))
-    )
-    HH = dt.strftime("%H")
-    YYYY = dt.strftime("%Y")
-    MM = dt.strftime("%m")
-    DD = dt.strftime("%d")
-    tstamp = dt.strftime("%Y-%m-%dT%H")
+    # Convert to pandas timestamp for easier datetime operations
+    dt = pd.Timestamp(ctime)
+
+    # Format datetime components
+    HH = f"{dt.hour:02d}"
+    YYYY = f"{dt.year:04d}"
+    MM = f"{dt.month:02d}"
+    DD = f"{dt.day:02d}"
+    tstamp = f"{YYYY}-{MM}-{DD}T{HH}"
+
+    # Create time attributes
     begin_date = np.int32(f"{YYYY}{MM}{DD}")
     begin_time = np.int32(dt.hour * 10000)
     time_increment = np.int32(120000)
     units = f"hours since {YYYY}-{MM}-{DD} {HH}:00:00"
 
-    ds["time"] = np.float32((ds["time"] - ds["time"]) / np.timedelta64(1, "h"))
+    # Set time coordinate to 0.0 (hours since reference time)
+    # This makes the time coordinate xarray-compatible
+    ds = ds.assign_coords(time=[np.float32(0.0)])
     ds.time.attrs = {
         "long_name": "time",
         "units": units,
@@ -138,6 +142,115 @@ def proc_time_step(
     ds.to_netcdf(output_dir / fname, encoding=encoding, engine="netcdf4")
 
 
+def process_dataset_files(
+    file_pattern: str,
+    search_dir: Path,
+    ref_time_str: str,
+    case_name: str,
+    output_dir: Path,
+    ens_mean: bool,
+    Y: str,
+    M: str,
+    D: str,
+    max_steps: int = None,
+) -> None:
+    """
+    Process dataset files for a given pattern and case (init, pred).
+    """
+    files = sorted(search_dir.glob(file_pattern))
+    if not files:
+        logging.warning(
+            f"No {case_name} files found for {Y}-{M}-{D} in {search_dir}"
+        )
+        return
+
+    # Safely open dataset with time attribute handling
+    try:
+        # Try normal opening first
+        ds = xr.open_dataset(files[0]).drop_vars(
+            "land_sea_mask", errors="ignore"
+        )
+    except ValueError as e:
+        if "dtype in attrs on variable 'time'" in str(e):
+            logging.info("Handling time dtype attribute conflict...")
+            # Open without time decoding first
+            ds = xr.open_dataset(files[0], decode_times=False).drop_vars(
+                "land_sea_mask", errors="ignore"
+            )
+
+            # Clean problematic time attributes
+            if "time" in ds.variables:
+                # Store original attributes we might need
+                time_attrs = dict(ds.time.attrs)
+
+                # Remove problematic encoding attributes
+                problematic_attrs = ["dtype", "_FillValue", "missing_value"]
+                for attr in problematic_attrs:
+                    if attr in ds.time.attrs:
+                        ds.time.attrs.pop(attr)
+
+                # Try to decode times manually
+                try:
+                    ds = xr.decode_cf(ds, decode_times=True)
+                    logging.info(
+                        "Successfully decoded times after cleaning attributes"
+                    )
+                except Exception as decode_error:
+                    logging.warning(f"Could not decode times: {decode_error}")
+                    # Restore some attributes if decoding failed
+                    ds.time.attrs.update(
+                        {
+                            k: v
+                            for k, v in time_attrs.items()
+                            if k not in problematic_attrs
+                        }
+                    )
+        else:
+            raise
+
+    # Create reference time as datetime64
+    ref_time = np.datetime64(f"{Y}-{M}-{D}T{ref_time_str}")
+
+    # Process time steps - handle both decoded and non-decoded time cases
+    time_values = ds.time.values[:max_steps] if max_steps else ds.time.values
+
+    for ctime in time_values:
+        try:
+            # Ensure ctime is datetime64
+            if isinstance(ctime, (int, float, np.integer, np.floating)):
+                # If time is numeric, try to convert using time attributes
+                if "units" in ds.time.attrs:
+                    # Use pandas/xarray to convert numeric time to datetime
+                    ctime_dt64 = pd.to_datetime(
+                        ctime,
+                        unit="D",
+                        origin=ds.time.attrs.get(
+                            "units", "days since 1900-01-01"
+                        ),
+                    )
+                    ctime_dt64 = np.datetime64(ctime_dt64)
+                else:
+                    logging.warning(
+                        f"Numeric time value {ctime} without units - skipping"
+                    )
+                    continue
+            else:
+                # Already a datetime-like object
+                ctime_dt64 = np.datetime64(ctime)
+
+            proc_time_step(
+                ds,
+                ctime_dt64,
+                ref_time,
+                output_dir=output_dir,
+                case=case_name,
+                ens_mean=ens_mean,
+            )
+        except Exception as time_error:
+            logging.error(f"Error processing time step {ctime}: {time_error}")
+            continue
+
+
 def run_postprocess_day(
     geos_dir: str,
     pred_dir: str,
@@ -155,51 +268,53 @@ def run_postprocess_day(
     )
     out_day.mkdir(parents=True, exist_ok=True)
 
+    # Format date strings
     Y = f"{year:04d}"
     M = f"{month:02d}"
     D = f"{day:02d}"
 
-    # Initial conditions (first two steps)
-    init_files = sorted(geos_dir.glob(f"*source-geos*{Y}-{M}-{D}_*.nc"))
-    if init_files:
-        ds_init = xr.open_dataset(init_files[0]).drop_vars(
-            "land_sea_mask", errors="ignore"
-        )
-        ref_init = np.datetime64(f"{Y}-{M}-{D}T00:00:00")
-        for start_time in ds_init.time.values[:2]:
-            proc_time_step(
-                ds_init,
-                start_time,
-                ref_init,
-                output_dir=out_day,
-                case="init",
-                ens_mean=ens_mean,
-            )
-    else:
-        logging.warning(
-            f"No GEOS init files found for {Y}-{M}-{D} in {geos_dir}"
-        )
+    # Hard-coded configuration for processing
+    INIT_CONFIG = {
+        "file_pattern": f"*source-geos*{Y}-{M}-{D}_*.nc",
+        "ref_time_str": "00:00:00",
+        "case_name": "init",
+        "max_steps": 2,  # First two steps only
+    }
 
-    # Predictions (all steps)
-    pred_files = sorted(pred_dir.glob(f"*geos_date-{Y}-{M}-{D}_*.nc"))
-    if pred_files:
-        ds_pred = xr.open_dataset(pred_files[0]).drop_vars(
-            "land_sea_mask", errors="ignore"
-        )
-        ref_pred = np.datetime64(f"{Y}-{M}-{D}T12:00:00")
-        for start_time in ds_pred.time.values:
-            proc_time_step(
-                ds_pred,
-                start_time,
-                ref_pred,
-                output_dir=out_day,
-                case="pred",
-                ens_mean=ens_mean,
-            )
-    else:
-        logging.warning(
-            f"No prediction files found for {Y}-{M}-{D} in {pred_dir}"
-        )
+    PRED_CONFIG = {
+        "file_pattern": f"*geos_date-{Y}-{M}-{D}_*.nc",
+        "ref_time_str": "12:00:00",
+        "case_name": "pred",
+        "max_steps": None,  # All steps
+    }
+
+    # Process initial conditions
+    process_dataset_files(
+        INIT_CONFIG["file_pattern"],
+        geos_dir,
+        INIT_CONFIG["ref_time_str"],
+        INIT_CONFIG["case_name"],
+        out_day,
+        ens_mean,
+        Y,
+        M,
+        D,
+        INIT_CONFIG["max_steps"],
+    )
+
+    # Process predictions
+    process_dataset_files(
+        PRED_CONFIG["file_pattern"],
+        pred_dir,
+        PRED_CONFIG["ref_time_str"],
+        PRED_CONFIG["case_name"],
+        out_day,
+        ens_mean,
+        Y,
+        M,
+        D,
+        PRED_CONFIG["max_steps"],
+    )
 
 
 def run_postprocess_multiday(
@@ -244,8 +359,7 @@ def run_postprocess_multiday(
 if __name__ == "__main__":
 
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(asstart_time)s - %(levelname)s - %(message)s",
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
     parser = argparse.ArgumentParser(
