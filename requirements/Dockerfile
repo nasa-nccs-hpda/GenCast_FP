@@ -42,7 +42,7 @@ ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
 # --- Clone your repo and compile the Fortran extension ---
 ARG REPO_URL="https://github.com/nasa-nccs-hpda/GenCast_FP.git"
-ARG REPO_REF="deployment-operations"
+ARG REPO_REF="main"
 WORKDIR /opt/GenCast_FP
 RUN git clone --depth 1 --branch ${REPO_REF} ${REPO_URL} /opt/GenCast_FP
 
