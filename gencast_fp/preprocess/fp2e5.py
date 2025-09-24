@@ -149,6 +149,9 @@ def run_preprocess(start_date, end_date, outdir, expid):
 
     os.makedirs(outdir, exist_ok=True)
 
+    res_value = 1.0  # 1.0 resolution
+    nsteps = 30  # 15 day rollout
+
     dates = pd.date_range(
         start=start_date,
         end=pd.to_datetime(end_date) + pd.Timedelta(hours=23),
@@ -156,7 +159,20 @@ def run_preprocess(start_date, end_date, outdir, expid):
     )
 
     regridder = None
-    for _, dates in dates.groupby(dates.date).items():
+    for day, dates in dates.groupby(dates.date).items():
+
+        date_str = pd.to_datetime(day).strftime("%Y-%m-%d")
+        out_file = os.path.join(
+            outdir,
+            f"gencast-dataset-source-geos_date-{date_str}" +
+            f"_res-{res_value}_levels-13_steps-{nsteps}.nc"
+        )
+
+        # skip if already exists
+        if os.path.exists(out_file):
+            print(f"Skipping {out_file}, already exists.")
+            continue
+
         daily_Ex = []
         daily_Ep = []
         for dt in dates:
@@ -195,14 +211,13 @@ def run_preprocess(start_date, end_date, outdir, expid):
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
 
         ds_out = to_gencast_input(ai_day)
+
         # save to netcdf
-        date_str = dt.strftime("%Y-%m-%d")
-        res_value = 1.0  # 1.0 resolution
-        nsteps = 30  # 15 day rollout
-        out_file = (
-            f"{outdir}/gencast-dataset-source-geos_date-{date_str}"
-            f"_res-{res_value}_levels-13_steps-{nsteps}.nc"
-        )
+        # date_str = dt.strftime("%Y-%m-%d")
+        # out_file = (
+        #    f"{outdir}/gencast-dataset-source-geos_date-{date_str}"
+        #    f"_res-{res_value}_levels-13_steps-{nsteps}.nc"
+        # )
         ds_out.to_netcdf(
             out_file, mode="w", format="NETCDF4", engine="netcdf4"
         )
