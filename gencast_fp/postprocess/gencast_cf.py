@@ -5,6 +5,28 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+def _open_xr_cf_safe(path: Path) -> xr.Dataset:
+    """
+    Open a NetCDF that may have illegal CF attrs (e.g., 'dtype' in attrs).
+    We open without decoding, strip offenders, then decode CF.
+    """
+    # 1) open raw, no decoding
+    ds = xr.open_dataset(path, decode_times=False, mask_and_scale=False, engine="netcdf4")
+
+    # 2) remove illegal attrs (currently 'dtype') from all variables
+    for v in ds.variables:
+        if "dtype" in ds[v].attrs:
+            ds[v].attrs.pop("dtype")
+
+    # (Optional) if someone stashed 'dtype' in encoding, strip it too
+    for v in ds.variables:
+        if "dtype" in ds[v].encoding:
+            ds[v].encoding.pop("dtype")
+
+    # 3) now decode CF (times, scale/offset, etc.)
+    ds = xr.decode_cf(ds, use_cftime=False)
+    return ds
+
 
 def _resolve_dt(ctime, ref_date):
     """
@@ -167,7 +189,8 @@ def run_postprocess_day(geos_dir: str, pred_dir: str, post_out_dir: str,
     # Initial conditions (first two steps)
     init_files = sorted(geos_dir.glob(f"*source-geos*{Y}-{M}-{D}_*.nc"))
     if init_files:
-        ds_init = xr.open_dataset(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
+        # ds_init = xr.open_dataset(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
+        ds_init = _open_xr_cf_safe(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
         # ref_init = np.datetime64(f"{Y}-{M}-{D}T00:00:00")
         ref_init = pd.Timestamp(f"{Y}-{M}-{D}T00:00:00")
         for ctime in ds_init.time.values[:2]:
@@ -178,7 +201,8 @@ def run_postprocess_day(geos_dir: str, pred_dir: str, post_out_dir: str,
     # Predictions (all steps)
     pred_files = sorted(pred_dir.glob(f"*geos_date-{Y}-{M}-{D}_*.nc"))
     if pred_files:
-        ds_pred = xr.open_dataset(pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
+        # ds_pred = xr.open_dataset(pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
+        ds_pred = _open_xr_cf_safe(pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
         # ref_pred = np.datetime64(f"{Y}-{M}-{D}T12:00:00")
         ref_pred = pd.Timestamp(f"{Y}-{M}-{D}T12:00:00")
         for ctime in ds_pred.time.values:
