@@ -1,6 +1,7 @@
 # GenCast-FP end-to-end workflow
 
-This workflow is to generate GenCast predictions with GEOS-FP as inputs. Follow the steps below to set up and run. The workflow currently only works on DISCOVER filesystems.
+This workflow is to generate GenCast predictions with GEOS-FP as inputs.
+Follow the steps below to set up and run. The workflow currently only works on DISCOVER filesystems.
 
 ## Quickstart
 
@@ -11,8 +12,9 @@ Note that the following command can be run from any Discover login node.
 ```bash
 sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
     --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
-    --wrap="module load singularity; singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
-    /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix-4 \
+    --wrap="module load singularity; singularity exec --nv \
+    -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
+    /discover/nobackup/projects/QEFM/containers/gencast-fp-latest \
     gencast-fp run --start_date 2024-12-01 --end_date 2024-12-03 \
     --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
 ```
@@ -53,7 +55,7 @@ are listed below. The pipeline has 3 steps: preprocess, predict, and postprocess
 ### Preprocessing
 
 ```bash
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix-4 python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py preprocess -h
+singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py preprocess -h
 usage: gencast_fp_cli.py preprocess [-h] --start_date START_DATE --end_date END_DATE [--output_dir OUTPUT_DIR] [--expid EXPID]
 
 options:
@@ -69,7 +71,7 @@ options:
 ### Prediction
 
 ```bash
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix-4 python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py predict -h
+singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py predict -h
 usage: gencast_fp_cli.py predict [-h] --start_date START_DATE --end_date END_DATE --input_dir INPUT_DIR --output_dir OUTPUT_DIR [--ckpt CKPT] [--nsteps NSTEPS] [--res RES] [--ensemble ENSEMBLE]
                                  [--container_meta CONTAINER_META]
 
@@ -93,7 +95,7 @@ options:
 ### Postprocessing
 
 ```bash
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/jacaraba/development/GenCast_FP/container/gencast-fp-latest-fix-4 python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py postprocess -h
+singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py postprocess -h
 usage: gencast_fp_cli.py postprocess [-h] --start_date START_DATE --end_date END_DATE --input_dir INPUT_DIR --predictions_dir PREDICTIONS_DIR [--output_dir OUTPUT_DIR] [--no_ens_mean]
 
 options:
