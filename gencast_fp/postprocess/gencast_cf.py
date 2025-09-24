@@ -5,25 +5,31 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+
 def _open_xr_cf_safe(path: Path) -> xr.Dataset:
     """
-    Open a NetCDF that may have illegal CF attrs (e.g., 'dtype' in attrs).
-    We open without decoding, strip offenders, then decode CF.
+    Open a NetCDF that may have illegal CF attrs (e.g., 'dtype' on time).
+    We open with *no* CF decoding, strip offenders, then decode CF.
     """
-    # 1) open raw, no decoding
-    ds = xr.open_dataset(path, decode_times=False, mask_and_scale=False, engine="netcdf4")
+    ds = xr.open_dataset(
+        path,
+        engine="netcdf4",
+        decode_cf=False,        # <— important
+        decode_times=False,     # <— important
+        mask_and_scale=False,   # <— important
+    )
 
-    # 2) remove illegal attrs (currently 'dtype') from all variables
-    for v in ds.variables:
-        if "dtype" in ds[v].attrs:
-            ds[v].attrs.pop("dtype")
+    # Strip illegal keys from both attrs and encoding
+    for name in list(ds.variables):
+        if "dtype" in ds[name].attrs:
+            ds[name].attrs.pop("dtype", None)
+        if "dtype" in ds[name].encoding:
+            ds[name].encoding.pop("dtype", None)
+        # For CF coords, avoid fill values in encoding
+        if name == "time":
+            ds[name].encoding.pop("_FillValue", None)
 
-    # (Optional) if someone stashed 'dtype' in encoding, strip it too
-    for v in ds.variables:
-        if "dtype" in ds[v].encoding:
-            ds[v].encoding.pop("dtype")
-
-    # 3) now decode CF (times, scale/offset, etc.)
+    # Now decode CF safely
     ds = xr.decode_cf(ds, use_cftime=False)
     return ds
 
