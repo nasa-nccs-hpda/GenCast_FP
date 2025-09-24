@@ -9,9 +9,12 @@ import xarray as xr
 import pandas as pd
 
 # from fp_to_era5 import *
-from gencast_fp.preprocess.fp_to_era5 import \
-    discover_files, fp_to_era5_xlevs, \
-    era5_dataset, fp_to_era5_hgrid
+from gencast_fp.preprocess.fp_to_era5 import (
+    discover_files,
+    fp_to_era5_xlevs,
+    era5_dataset,
+    fp_to_era5_hgrid,
+)
 
 
 def get_era5_lsm(lsm_file: str = "/css/era5/static/era5_static-allvar.nc"):
@@ -26,7 +29,17 @@ def get_era5_lsm(lsm_file: str = "/css/era5/static/era5_static-allvar.nc"):
 
 
 def get_era5_sst(file=None):
-    ds = xr.open_dataset(file, engine="netcdf4")
+    """Gets ERA5 SST. If current year is not available, uses prev year."""
+    if os.path.exists(file):
+        use_file = file
+    else:
+        filename = os.path.basename(file)
+        date_str = filename.split("_")[3]
+        year = str(int(date_str[:4]) - 1)
+        new = year + date_str[4:]
+        use_file = file.replace(date_str, new)
+
+    ds = xr.open_dataset(use_file, engine="netcdf4")
     sst = (
         ds["sst"]
         .squeeze(drop=True)
@@ -165,8 +178,8 @@ def run_preprocess(start_date, end_date, outdir, expid):
         date_str = pd.to_datetime(day).strftime("%Y-%m-%d")
         out_file = os.path.join(
             outdir,
-            f"gencast-dataset-source-geos_date-{date_str}" +
-            f"_res-{res_value}_levels-13_steps-{nsteps}.nc"
+            f"gencast-dataset-source-geos_date-{date_str}"
+            + f"_res-{res_value}_levels-13_steps-{nsteps}.nc",
         )
 
         # skip if already exists
@@ -259,12 +272,7 @@ def main():
     args = parser.parse_args()
 
     # Run preprocessing function
-    run_preprocess(
-        args.start_date,
-        args.end_date,
-        args.outdir,
-        args.expid
-    )
+    run_preprocess(args.start_date, args.end_date, args.outdir, args.expid)
 
     return
 
