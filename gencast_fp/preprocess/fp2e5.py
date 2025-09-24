@@ -2,6 +2,7 @@
 
 import os
 import argparse
+import logging
 import numpy as np
 import xesmf as xe
 import xarray as xr
@@ -170,15 +171,15 @@ def run_preprocess(start_date, end_date, outdir, expid):
 
         # skip if already exists
         if os.path.exists(out_file):
-            print(f"Skipping {out_file}, already exists.")
+            logging.info(f"Skipping {out_file}, already exists.")
             continue
 
         daily_Ex = []
         daily_Ep = []
         for dt in dates:
-            print(dt)
+            logging.info(dt)
             Files = discover_files(dt, outdir=outdir, expid=expid)
-            print(Files)
+            logging.info(Files)
             sst = get_era5_sst(Files["e5_Ex"])
 
             fp_Nx = xr.open_dataset(Files["fp_Nx"], engine="netcdf4")

@@ -6,15 +6,43 @@ import pandas as pd
 from pathlib import Path
 
 
+def _resolve_dt(ctime, ref_date):
+    """
+    Return a pandas.Timestamp for the step time.
+    - If ctime is absolute (datetime64), use it directly.
+    - If ctime is a timedelta64, add it to ref_date.
+    - If ctime is numeric, interpret as hours since ref_date.
+    """
+    c = np.asarray(ctime)
+    # normalize ref_date to ns precision
+    ref_ns = np.datetime64(pd.to_datetime(ref_date).to_datetime64(), 'ns')
+
+    if np.issubdtype(c.dtype, np.datetime64):
+        # already absolute
+        return pd.to_datetime(c.astype('datetime64[ns]'))
+
+    if np.issubdtype(c.dtype, np.timedelta64):
+        # relative offset
+        return pd.to_datetime(ref_ns + c.astype('timedelta64[ns]'))
+
+    # fallback: numeric hours since ref_date
+    return pd.to_datetime(ref_ns) + pd.to_timedelta(float(c), unit='h')
+
+
 def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_mean=True):
+
     FILL_VALUE = np.float32(1.0e15)
     fmodel = "FMGenCast"
 
     ds = ds_org.sel(time=ctime).expand_dims("time")
 
-    # --- time attrs ---
-    dt = pd.to_datetime(ref_date + ctime)
-    HH = dt.strftime("%H"); YYYY = dt.strftime("%Y"); MM = dt.strftime("%m"); DD = dt.strftime("%d")
+    # Time
+    # dt = pd.to_datetime(ref_date + ctime)
+    dt = _resolve_dt(ctime, ref_date)  # instead of: pd.to_datetime(ref_date + ctime)
+    HH = dt.strftime("%H")
+    YYYY = dt.strftime("%Y")
+    MM = dt.strftime("%m")
+    DD = dt.strftime("%d")
     tstamp = dt.strftime("%Y-%m-%dT%H")
     begin_date = np.int32(f"{YYYY}{MM}{DD}")
     begin_time = np.int32(dt.hour * 10000)
@@ -140,7 +168,8 @@ def run_postprocess_day(geos_dir: str, pred_dir: str, post_out_dir: str,
     init_files = sorted(geos_dir.glob(f"*source-geos*{Y}-{M}-{D}_*.nc"))
     if init_files:
         ds_init = xr.open_dataset(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
-        ref_init = np.datetime64(f"{Y}-{M}-{D}T00:00:00")
+        # ref_init = np.datetime64(f"{Y}-{M}-{D}T00:00:00")
+        ref_init = pd.Timestamp(f"{Y}-{M}-{D}T00:00:00")
         for ctime in ds_init.time.values[:2]:
             proc_time_step(ds_init, ctime, ref_init, output_dir=out_day, case="init", ens_mean=ens_mean)
     else:
@@ -150,7 +179,8 @@ def run_postprocess_day(geos_dir: str, pred_dir: str, post_out_dir: str,
     pred_files = sorted(pred_dir.glob(f"*geos_date-{Y}-{M}-{D}_*.nc"))
     if pred_files:
         ds_pred = xr.open_dataset(pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
-        ref_pred = np.datetime64(f"{Y}-{M}-{D}T12:00:00")
+        # ref_pred = np.datetime64(f"{Y}-{M}-{D}T12:00:00")
+        ref_pred = pd.Timestamp(f"{Y}-{M}-{D}T12:00:00")
         for ctime in ds_pred.time.values:
             proc_time_step(ds_pred, ctime, ref_pred, output_dir=out_day, case="pred", ens_mean=ens_mean)
     else:
