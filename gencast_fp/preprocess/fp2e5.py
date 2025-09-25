@@ -30,6 +30,8 @@ def get_era5_lsm(lsm_file: str = "/css/era5/static/era5_static-allvar.nc"):
 
 def get_era5_sst(file=None):
     """Gets ERA5 SST. If current year is not available, uses prev year."""
+    print(f"getting sst for era5, file: {file}")
+    print(f"file exists: {os.path.exists(file)}")
     if os.path.exists(file):
         use_file = file
     else:
@@ -37,6 +39,7 @@ def get_era5_sst(file=None):
         date_str = filename.split("_")[3]
         year = str(int(date_str[:4]) - 1)
         new = year + date_str[4:]
+        print(f"file nf, subtracting 1 from year. date_str is now: {new}")
         use_file = file.replace(date_str, new)
 
     ds = xr.open_dataset(use_file, engine="netcdf4")
