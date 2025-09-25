@@ -16,6 +16,16 @@ from gencast_fp.preprocess.fp_to_era5 import (
     fp_to_era5_hgrid,
 )
 
+def generate_dates(start_date: str, end_date: str):
+    fmt = "%Y-%m-%d:%H"
+    try:
+        start = pd.to_datetime(start_date, format=fmt)
+        end = pd.to_datetime(end_date, format=fmt)
+    except:
+        raise ValueError("Please provide dates in format: YYYY-MM-DD-HH (e.g., '2020-01-01-00')")
+    start_shift = start - pd.Timedelta(hours=12)
+    dates = pd.date_range(start=start_shift, end=end, freq="12h")
+    return dates
 
 def get_era5_lsm(lsm_file: str = "/css/era5/static/era5_static-allvar.nc"):
     ds = xr.open_dataset(lsm_file, engine="netcdf4")
@@ -27,29 +37,29 @@ def get_era5_lsm(lsm_file: str = "/css/era5/static/era5_static-allvar.nc"):
     )
     return lsm
 
+# TODO: Get SST from OSTIA data files
+# def get_era5_sst(file=None):
+#     """Gets ERA5 SST. If current year is not available, uses prev year."""
+#     print(f"getting sst for era5, file: {file}")
+#     print(f"file exists: {os.path.exists(file)}")
+#     if os.path.exists(file):
+#         use_file = file
+#     else:
+#         filename = os.path.basename(file)
+#         date_str = filename.split("_")[3]
+#         year = str(int(date_str[:4]) - 1)
+#         new = year + date_str[4:]
+#         print(f"file nf, subtracting 1 from year. date_str is now: {new}")
+#         use_file = file.replace(date_str, new)
 
-def get_era5_sst(file=None):
-    """Gets ERA5 SST. If current year is not available, uses prev year."""
-    print(f"getting sst for era5, file: {file}")
-    print(f"file exists: {os.path.exists(file)}")
-    if os.path.exists(file):
-        use_file = file
-    else:
-        filename = os.path.basename(file)
-        date_str = filename.split("_")[3]
-        year = str(int(date_str[:4]) - 1)
-        new = year + date_str[4:]
-        print(f"file nf, subtracting 1 from year. date_str is now: {new}")
-        use_file = file.replace(date_str, new)
-
-    ds = xr.open_dataset(use_file, engine="netcdf4")
-    sst = (
-        ds["sst"]
-        .squeeze(drop=True)
-        .drop_vars(["expver", "number"])
-        .astype("float32")
-    )
-    return sst
+#     ds = xr.open_dataset(use_file, engine="netcdf4")
+#     sst = (
+#         ds["sst"]
+#         .squeeze(drop=True)
+#         .drop_vars(["expver", "number"])
+#         .astype("float32")
+#     )
+#     return sst
 
 
 def expand_dims(ds, steps):
@@ -112,7 +122,7 @@ def to_gencast_input(ds):
         "msl": "mean_sea_level_pressure",
         "tp": "total_precipitation_12hr",
         "zs": "geopotential_at_surface",
-        "sst": "sea_surface_temperature",
+        "skt": "sea_surface_temperature",
         "lsm": "land_sea_mask",
         "latitude": "lat",
         "longitude": "lon",
@@ -124,7 +134,7 @@ def to_gencast_input(ds):
         latitude=slice(None, None, -4), longitude=slice(None, None, 4)
     ).compute()
 
-    ds = ds.drop_vars(["hgt", "p", "sp", "skt"])
+    ds = ds.drop_vars(["hgt", "p", "sp"])
     # change variable names
     ds = ds.rename(var_mapping)
 
@@ -169,16 +179,13 @@ def run_preprocess(start_date, end_date, outdir, expid):
     res_value = 1.0  # 1.0 resolution
     nsteps = 30  # 15 day rollout
 
-    dates = pd.date_range(
-        start=start_date,
-        end=pd.to_datetime(end_date) + pd.Timedelta(hours=23),
-        freq="12h",
-    )
+    dates = generate_dates(start_date, end_date)
+    pairs = [(dates[i], dates[i+1]) for i in range(len(dates)-1)]
 
     regridder = None
-    for day, dates in dates.groupby(dates.date).items():
+    for time_tuple in pairs:
 
-        date_str = pd.to_datetime(day).strftime("%Y-%m-%d")
+        date_str = time_tuple[1].strftime("%Y-%m-%dT%H")
         out_file = os.path.join(
             outdir,
             f"gencast-dataset-source-geos_date-{date_str}"
@@ -192,11 +199,10 @@ def run_preprocess(start_date, end_date, outdir, expid):
 
         daily_Ex = []
         daily_Ep = []
-        for dt in dates:
+        for dt in time_tuple:
             logging.info(dt)
             Files = discover_files(dt, outdir=outdir, expid=expid)
             logging.info(Files)
-            sst = get_era5_sst(Files["e5_Ex"])
 
             fp_Nx = xr.open_dataset(Files["fp_Nx"], engine="netcdf4")
             fp_Nv = xr.open_dataset(Files["fp_Nv"], engine="netcdf4")
@@ -211,10 +217,6 @@ def run_preprocess(start_date, end_date, outdir, expid):
 
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
 
-            # add sst to the dataset
-            sst = get_era5_sst(Files["e5_Ex"])
-            ai_Ex["sst"] = sst.expand_dims(time=[dt])
-
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
 
@@ -223,7 +225,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
         ai_Ep_day = xr.concat(daily_Ep, dim="time")
 
         # add the lsm
-        lsm = get_era5_lsm()
+        lsm = get_era5_lsm(Files["e5_Es"])
         # merge into single dataset for the day
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
 
@@ -250,13 +252,13 @@ def main():
         "--start_date",
         type=str,
         required=True,
-        help="Start date to process (YYYY-MM-DD)",
+        help="Start date to process (YYYY-MM-DD:HH)",
     )
     parser.add_argument(
         "--end_date",
         type=str,
         required=True,
-        help="End date to process (YYYY-MM-DD)",
+        help="End date to process (YYYY-MM-DD:HH)",
     )
 
     parser.add_argument(
