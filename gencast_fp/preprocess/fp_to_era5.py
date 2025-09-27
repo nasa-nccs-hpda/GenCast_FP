@@ -195,10 +195,12 @@ def discover_files(time, outdir='./', expid='f5295'):
     # ERA-5 and GEOS-FP directories on discover
     # -----------------------------------------
     t, x = time, expid
+    sst_dir = '/gpfsm/dnb07/projects/p10/gmao_ops/fvInput/g5gcm/bcs/realtime/OSTIA_REYNOLDS/2880x1440/'
     e5_dirn = '/css/era5/static/'
     fp_dirn = '/gpfsm/dnb06/projects/p174/%expid_fp/diag/Y%y4/M%m2/'
 
     F1 = dict(e5_Es = (e5_dirn+'era5_static-allvar.nc'),
+              sst = _gat2s(sst_dir+'dataoceanfile_OSTIA_REYNOLDS_SST.2880x1440.%y4.data',t,x),
               fp_Nv = _gat2s(fp_dirn+'%expid_fp.inst3_3d_asm_Nv.%y4%m2%d2_%h2%n2z.nc4',t,x),
               fp_Nx = _gat2s(fp_dirn+'%expid_fp.inst3_2d_asm_Nx.%y4%m2%d2_%h2%n2z.nc4',t,x),
               )
@@ -250,9 +252,39 @@ def era5_dataset(title,e5_plevs=e5_plevs):
 
     return xr.Dataset(coords=coords, attrs=attrs)
 
+def sst_dataset(title):
+    """
+    Return an empty dataset with SST coordinates and simple attributes.
+    """
+
+    # Horizontal coords hardwired
+    # ---------------------------
+    res = 0.125
+    sst_lons = -179.935 + res * np.arange(2880)
+    sst_lats = -89.9375 + res * np.arange(1440)
+
+    lon = xr.DataArray(sst_lons, dims='longitude',
+                                attrs = dict ( long_name='Longitude',
+                                               units='degrees_east',
+                                               standard_name='longitude') )
+    lat = xr.DataArray(sst_lats, dims='latitude',
+                                attrs = dict ( long_name='Latitude',
+                                               units='degrees_north',
+                                               standard_name='latitude') )
+
+    # Hardwire attributes
+    # -------------------
+    attrs = dict ( Title = title,
+                   Conventions = 'CF-1.7',
+                   Institution = 'Global Modeling and Assimilation Office, NASA/GSFC',
+                   History = 'Created with fp_to_era5 on %s'%str(datetime.now()),
+    )
+
+    coords = dict ( longitude=lon, latitude=lat)
+
+    return xr.Dataset(coords=coords, attrs=attrs)
 
 #........................................................................................
-
 def fp_to_era5_xlevs ( fp_Nx, fp_Nv, plevs=e5_plevs ):
     
     """

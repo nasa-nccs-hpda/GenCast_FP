@@ -13,6 +13,7 @@ from gencast_fp.preprocess.fp_to_era5 import (
     discover_files,
     fp_to_era5_xlevs,
     era5_dataset,
+    sst_dataset,
     fp_to_era5_hgrid,
 )
 
@@ -37,30 +38,45 @@ def get_era5_lsm(lsm_file: str = "/css/era5/static/era5_static-allvar.nc"):
     )
     return lsm
 
-# TODO: Get SST from OSTIA data files
-# def get_era5_sst(file=None):
-#     """Gets ERA5 SST. If current year is not available, uses prev year."""
-#     print(f"getting sst for era5, file: {file}")
-#     print(f"file exists: {os.path.exists(file)}")
-#     if os.path.exists(file):
-#         use_file = file
-#     else:
-#         filename = os.path.basename(file)
-#         date_str = filename.split("_")[3]
-#         year = str(int(date_str[:4]) - 1)
-#         new = year + date_str[4:]
-#         print(f"file nf, subtracting 1 from year. date_str is now: {new}")
-#         use_file = file.replace(date_str, new)
+def get_sst(sst_file: str, current_date: pd.Timestamp):
+    # Read the binary SST file and extract the SST for the given date
+    # The SST file is in a custom binary format with a header
+    # The header contains the start date of the record
+    # Each record is 72 bytes + 2880*1440*4 bytes (float32)
+    # The first 68 bytes of the header are not used
+    nx, ny = 2880, 1440
+    dtype = np.float32
+    theader_0 = 68
+    theader = 72
+    # Get the start_date (yyyy-mm-dd) of the SST record
+    with open(sst_file, "rb") as f:
+        header = np.fromfile(f, dtype=dtype, count=theader_0/4)
+    rec_start_date = pd.Timestamp(int(header[1]), int(header[2]), int(header[3]))
+    delta = (current_date - rec_start_date).days
+    if delta < 0:
+        raise ValueError(f"SST file {sst_file} does not cover date {current_date}")
+    
+    # Read the SST record for the current date
+    offset = theader_0 + delta * (theader + nx * ny * 4)
+    with open(sst_file, "rb") as f:
+        f.seek(offset, 0)
+        data = np.fromfile(f, dtype=dtype, count=nx * ny)
+        sst = data.reshape((ny, nx))
+    
+    # Convert to xarray DataArray
+    ds = sst_dataset(" OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
+    sst_np_time = sst[np.newaxis, :, :]  # add time dimension
+    time = xr.DataArray([current_date], dims=["time"], coords={"time": [current_date]})
+    ds = ds.assign_coords(time=time)
+    ds['sst'] = xr.DataArray( sst_np_time, 
+                              dims=("time", "lat", "lon"), 
+                              coords={"time": time, "lat": ds['lat'], "lon": ds['lon']},
+                              attrs=dict("units": "K", 
+                                        "long_name": "Sea Surface Temperature",
+                                        "standard_name": "sea_surface_temperature"),
+                            )
 
-#     ds = xr.open_dataset(use_file, engine="netcdf4")
-#     sst = (
-#         ds["sst"]
-#         .squeeze(drop=True)
-#         .drop_vars(["expver", "number"])
-#         .astype("float32")
-#     )
-#     return sst
-
+    return ds
 
 def expand_dims(ds, steps):
     # Expand the time dimension of the dataset
@@ -183,6 +199,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
     pairs = [(dates[i], dates[i+1]) for i in range(len(dates)-1)]
 
     regridder = None
+    sst_regridder = None
     for time_tuple in pairs:
 
         date_str = time_tuple[1].strftime("%Y-%m-%dT%H")
@@ -214,6 +231,10 @@ def run_preprocess(start_date, end_date, outdir, expid):
             )
             if not regridder:
                 regridder = xe.Regridder(ai_Nx, ai_Ex, "conservative")
+            
+            if not sst_regridder:
+                ai_sst = sst_dataset(" OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
+                sst_regridder = xe.Regridder(ai_sst, ai_Ex, "conservative")
 
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
 
