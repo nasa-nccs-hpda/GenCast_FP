@@ -71,9 +71,9 @@ def get_sst(sst_file: str, current_date: pd.Timestamp):
     ds['sst'] = xr.DataArray( sst_np_time, 
                               dims=("time", "lat", "lon"), 
                               coords={"time": time, "lat": ds['lat'], "lon": ds['lon']},
-                              attrs=dict("units": "K", 
-                                        "long_name": "Sea Surface Temperature",
-                                        "standard_name": "sea_surface_temperature"),
+                              attrs={"units": "K", 
+                                     "long_name": "Sea Surface Temperature",
+                                    "standard_name": "sea_surface_temperature"},
                             )
 
     return ds
