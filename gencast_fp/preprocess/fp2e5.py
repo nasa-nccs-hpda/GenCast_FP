@@ -235,7 +235,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
                 regridder = xe.Regridder(ai_Nx, ai_Ex, "conservative")
 
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
-            print("Before sst", ai_Ex.data_vars)
+
             # get the sst
             sst_ds = get_sst(Files["sst"], dt)
             if not sst_regridder:
@@ -243,9 +243,6 @@ def run_preprocess(start_date, end_date, outdir, expid):
                 sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
             ai_sst = sst_regridder(sst_ds['sst'], keep_attrs=True)
             ai_Ex['sst'] = ai_sst
-            print("After sst", ai_Ex.data_vars)
-            print(ai_Ex['sst'])
-            exit()
 
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
@@ -256,6 +253,11 @@ def run_preprocess(start_date, end_date, outdir, expid):
 
         # add the lsm
         lsm = get_era5_lsm(Files["e5_Es"])
+
+        # apply lsm to sst
+        lsm_nan = lsm.where(lsm == 0)
+        ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
+
         # merge into single dataset for the day
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
 
