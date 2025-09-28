@@ -65,7 +65,7 @@ def get_sst(sst_file: str, current_date: pd.Timestamp):
         sst = data.reshape((ny, nx))
     
     # Convert to xarray DataArray
-    ds = sst_dataset(" OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
+    ds = sst_dataset("OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
     sst_np_time = sst[np.newaxis, :, :]  # add time dimension
     time = xr.DataArray([current_date], dims=["time"], coords={"time": [current_date]})
     ds = ds.assign_coords(time=time)
@@ -231,18 +231,21 @@ def run_preprocess(start_date, end_date, outdir, expid):
                 "GEOS-FP 2D Variables on ERA-5 Grid for AI/ML Modeling"
             )
 
-            ai_sst = get_sst(Files["sst"], dt)
-            print(ai_sst)
-            exit()
-
             if not regridder:
                 regridder = xe.Regridder(ai_Nx, ai_Ex, "conservative")
-            
-            if not sst_regridder:
-                ai_sst = sst_dataset(" OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
-                sst_regridder = xe.Regridder(ai_sst, ai_Ex, "conservative")
 
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
+            print("Before sst", ai_Ex.data_vars)
+            # get the sst
+            sst_ds = get_sst(Files["sst"], dt)
+            if not sst_regridder:
+                sst_grid = sst_dataset("OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
+                sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
+            ai_sst = sst_regridder(sst_ds['sst'], keep_attrs=True)
+            ai_Ex['sst'] = ai_sst
+            print("After sst", ai_Ex.data_vars)
+            print(ai_Ex['sst'])
+            exit()
 
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
