@@ -222,6 +222,10 @@ def run_preprocess(start_date, end_date, outdir, expid):
             Files = discover_files(dt, outdir=outdir, expid=expid)
             logging.info(Files)
 
+            sst_ds = get_sst(Files["sst"], dt)
+            sst_ds.to_netcdf('sst.nc')
+            exit()
+
             fp_Nx = xr.open_dataset(Files["fp_Nx"], engine="netcdf4")
             fp_Nv = xr.open_dataset(Files["fp_Nv"], engine="netcdf4")
 
