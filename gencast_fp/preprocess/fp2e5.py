@@ -222,10 +222,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
             Files = discover_files(dt, outdir=outdir, expid=expid)
             logging.info(Files)
 
-            sst_ds = get_sst(Files["sst"], dt)
-            sst_ds.to_netcdf('/discover/nobackup/jli30/systest/GenCast_FP/sst.nc')
-            exit()
-
+            # Process the GEOS-FP first
             fp_Nx = xr.open_dataset(Files["fp_Nx"], engine="netcdf4")
             fp_Nv = xr.open_dataset(Files["fp_Nv"], engine="netcdf4")
 
@@ -246,8 +243,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
             if not sst_regridder:
                 sst_grid = sst_dataset("OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
                 sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
-            ai_sst = sst_regridder(sst_ds['sst'], keep_attrs=True)
-            ai_Ex['sst'] = ai_sst
+            ai_Ex['sst'] = sst_regridder(sst_ds['sst'], keep_attrs=True)
             print(ai_Ex['sst'].min(), ai_Ex['sst'].max())
 
             daily_Ex.append(ai_Ex)
@@ -261,8 +257,8 @@ def run_preprocess(start_date, end_date, outdir, expid):
         lsm = get_era5_lsm(Files["e5_Es"])
 
         # apply lsm to sst
-        # lsm_nan = lsm.where(lsm == 0, 1.0, np.nan)
-        # ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
+        lsm_nan = xr.where(lsm == 0, 1.0, np.nan)
+        ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
 
         # merge into single dataset for the day
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
@@ -270,11 +266,6 @@ def run_preprocess(start_date, end_date, outdir, expid):
         ds_out = to_gencast_input(ai_day)
 
         # save to netcdf
-        # date_str = dt.strftime("%Y-%m-%d")
-        # out_file = (
-        #    f"{outdir}/gencast-dataset-source-geos_date-{date_str}"
-        #    f"_res-{res_value}_levels-13_steps-{nsteps}.nc"
-        # )
         ds_out.to_netcdf(
             out_file, mode="w", format="NETCDF4", engine="netcdf4"
         )
