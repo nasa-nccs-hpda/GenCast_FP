@@ -272,6 +272,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
         ds_out.to_netcdf(
             out_file, mode="w", format="NETCDF4", engine="netcdf4"
         )
+        exit()
     return
 
 
