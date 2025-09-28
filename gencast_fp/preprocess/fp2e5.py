@@ -229,6 +229,11 @@ def run_preprocess(start_date, end_date, outdir, expid):
             ai_Ex = era5_dataset(
                 "GEOS-FP 2D Variables on ERA-5 Grid for AI/ML Modeling"
             )
+
+            ai_sst = get_sst(Files["sst"], dt)
+            print(ai_sst)
+            exit()
+
             if not regridder:
                 regridder = xe.Regridder(ai_Nx, ai_Ex, "conservative")
             
