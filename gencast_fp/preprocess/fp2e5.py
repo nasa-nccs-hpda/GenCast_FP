@@ -47,10 +47,11 @@ def get_sst(sst_file: str, current_date: pd.Timestamp):
     nx, ny = 2880, 1440
     dtype = np.float32
     theader_0 = 68
+    header_count = theader_0 // 4
     theader = 72
     # Get the start_date (yyyy-mm-dd) of the SST record
     with open(sst_file, "rb") as f:
-        header = np.fromfile(f, dtype=dtype, count=theader_0/4)
+        header = np.fromfile(f, dtype=dtype, count=header_count)
     rec_start_date = pd.Timestamp(int(header[1]), int(header[2]), int(header[3]))
     delta = (current_date - rec_start_date).days
     if delta < 0:

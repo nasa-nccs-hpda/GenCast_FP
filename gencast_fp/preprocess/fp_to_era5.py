@@ -464,10 +464,10 @@ if __name__ == "__main__":
     
     # Save as NetCDF files
     # --------------------
-    if save_intermediate:
-        aiml_Nv = os.path.basename(fp_fileNv).replace('asm_Nv','aiml_Nv')
-        fp_Nv.to_netcdf(aiml_Nv,engine='netcdf4')
-        aiml_Nx = os.path.basename(fp_fileNx).replace('asm_Nx','aiml_Nx')
-        fp_Nx.to_netcdf(aiml_Nx,engine='netcdf4')
+    # if save_intermediate:
+    #     aiml_Nv = os.path.basename(fp_fileNv).replace('asm_Nv','aiml_Nv')
+    #     fp_Nv.to_netcdf(aiml_Nv,engine='netcdf4')
+    #     aiml_Nx = os.path.basename(fp_fileNx).replace('asm_Nx','aiml_Nx')
+    #     fp_Nx.to_netcdf(aiml_Nx,engine='netcdf4')
 
 
