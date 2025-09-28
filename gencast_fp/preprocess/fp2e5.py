@@ -238,11 +238,13 @@ def run_preprocess(start_date, end_date, outdir, expid):
 
             # get the sst
             sst_ds = get_sst(Files["sst"], dt)
+            print(sst_ds['sst'].min().item(), sst_ds['sst'].max().item())
+            exit()
             if not sst_regridder:
                 sst_grid = sst_dataset("OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
                 sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
             ai_sst = sst_regridder(sst_ds['sst'], keep_attrs=True)
-            ai_Ex['sst'] = ai_sst
+            ai_Ex['sea_surface_temperature'] = ai_sst
 
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
@@ -256,7 +258,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
 
         # apply lsm to sst
         lsm_nan = lsm.where(lsm == 0)
-        ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
+        ai_Ex_day['sea_surface_temperature'] = ai_Ex_day['sea_surface_temperature'] * lsm_nan
 
         # merge into single dataset for the day
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
