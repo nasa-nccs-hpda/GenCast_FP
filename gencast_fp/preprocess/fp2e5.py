@@ -238,14 +238,13 @@ def run_preprocess(start_date, end_date, outdir, expid):
 
             # get the sst
             sst_ds = get_sst(Files["sst"], dt)
-            print(sst_ds['sst'].min(), sst_ds['sst'].max())
-            exit()
 
             if not sst_regridder:
                 sst_grid = sst_dataset("OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
                 sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
             ai_sst = sst_regridder(sst_ds['sst'], keep_attrs=True)
             ai_Ex['sst'] = ai_sst
+            print(ai_sst['sst'].min(), ai_sst['sst'].max())
 
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
@@ -258,8 +257,8 @@ def run_preprocess(start_date, end_date, outdir, expid):
         lsm = get_era5_lsm(Files["e5_Es"])
 
         # apply lsm to sst
-        lsm_nan = lsm.where(lsm == 0, 1.0, np.nan)
-        ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
+        # lsm_nan = lsm.where(lsm == 0, 1.0, np.nan)
+        # ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
 
         # merge into single dataset for the day
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
