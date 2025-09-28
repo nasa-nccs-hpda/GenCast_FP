@@ -244,7 +244,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
                 sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
             ai_sst = sst_regridder(sst_ds['sst'], keep_attrs=True)
             ai_Ex['sst'] = ai_sst
-            print(ai_sst['sst'].min(), ai_sst['sst'].max())
+            print(ai_Ex['sst'].min(), ai_Ex['sst'].max())
 
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
