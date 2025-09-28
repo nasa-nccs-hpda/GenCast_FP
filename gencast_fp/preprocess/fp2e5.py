@@ -257,7 +257,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
         lsm = get_era5_lsm(Files["e5_Es"])
 
         # apply lsm to sst
-        lsm_nan = lsm.where(lsm == 0)
+        lsm_nan = lsm.where(lsm == 0, 1.0, np.nan)
         ai_Ex_day['sea_surface_temperature'] = ai_Ex_day['sea_surface_temperature'] * lsm_nan
 
         # merge into single dataset for the day
