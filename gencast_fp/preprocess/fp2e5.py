@@ -238,8 +238,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
 
             # get the sst
             sst_ds = get_sst(Files["sst"], dt)
-            print(sst_ds['sst'].min().item(), sst_ds['sst'].max().item())
-            exit()
+
             if not sst_regridder:
                 sst_grid = sst_dataset("OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
                 sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
