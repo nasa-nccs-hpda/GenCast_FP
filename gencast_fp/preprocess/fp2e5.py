@@ -244,7 +244,6 @@ def run_preprocess(start_date, end_date, outdir, expid):
                 sst_grid = sst_dataset("OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
                 sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
             ai_Ex['sst'] = sst_regridder(sst_ds['sst'], keep_attrs=True)
-            print(ai_Ex['sst'].min(), ai_Ex['sst'].max())
 
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
@@ -259,6 +258,7 @@ def run_preprocess(start_date, end_date, outdir, expid):
         # apply lsm to sst
         lsm_nan = xr.where(lsm == 0, 1.0, np.nan)
         ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
+        ai_Ex_day['sst'] = ai_Ex_day['sst'].where(ai_Ex_day['sst'] >= 271.35)
 
         # merge into single dataset for the day
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
