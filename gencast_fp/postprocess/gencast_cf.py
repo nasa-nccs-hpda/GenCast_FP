@@ -140,7 +140,7 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_m
         "PRECTOT": {"long_name": "total_precipitation", "units": "m"},
         "U":    {"long_name": "eastward_wind", "units": "m s-1"},
         "V":    {"long_name": "northward_wind", "units": "m s-1"},
-        "OMEGA":{"long_name": "vertical_pressure_velocity", "units": "Pa s-1"},
+        "OMEGA": {"long_name": "vertical_pressure_velocity", "units": "Pa s-1"},
         "PHIS": {"long_name": "surface_geopotential_height", "units": "m+2 s-2"},
     }
 
@@ -159,7 +159,7 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_m
 
     # --- globals ---
     ds.attrs = {
-        "title": f"FMGenCast forecast start at {YYYY}-{MM}-{DD}T12:00:00",
+        "title": f"FMGenCast forecast start at {YYYY}-{MM}-{DD}T12:00:00", # TODO: FIX THIS TIME with +12
         "institution": "NASA CISTO Data Science Group",
         "source": "FMGenCast model output",
         "Conventions": "CF",
@@ -180,25 +180,43 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_m
     ds.to_netcdf(output_dir / fname, encoding=encoding, engine="netcdf4")
 
 
-def run_postprocess_day(geos_dir: str, pred_dir: str, post_out_dir: str,
-                        year: int, month: int, day: int, ens_mean: bool = True) -> None:
-    """Process one day's init (from GEOS) and prediction files into CF NetCDFs."""
+def run_postprocess_day(
+                geos_dir: str,
+                pred_dir: str,
+                post_out_dir: str,
+                date: str,
+                # year: int,
+                # month: int,
+                # day: int,
+                # hour: str,
+                ens_mean: bool = True
+            ) -> None:
+    """
+    Process one day's init (from GEOS) and
+    prediction files into CF NetCDFs.
+    """
     geos_dir = Path(geos_dir)
     pred_dir = Path(pred_dir)
-    out_day = Path(post_out_dir) / f"Y{year:04d}" / f"M{month:02d}" / f"D{day:02d}"
+    print("geos_dir", geos_dir)
+    print("pred_dir", pred_dir)
+
+    """
+    out_day = Path(
+        post_out_dir) / f"Y{year:04d}" / f"M{month:02d}" / f"D{day:02d}"
     out_day.mkdir(parents=True, exist_ok=True)
 
     Y = f"{year:04d}"
     M = f"{month:02d}"
     D = f"{day:02d}"
+    # TODO: add the hour here
 
     # Initial conditions (first two steps)
-    init_files = sorted(geos_dir.glob(f"*source-geos*{Y}-{M}-{D}_*.nc"))
+    init_files = sorted(geos_dir.glob(f"*source-geos*{Y}-{M}-{D}_*.nc")) # TODO: add the hour to this regex
     if init_files:
         # ds_init = xr.open_dataset(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
         ds_init = _open_xr_cf_safe(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
         # ref_init = np.datetime64(f"{Y}-{M}-{D}T00:00:00")
-        ref_init = pd.Timestamp(f"{Y}-{M}-{D}T00:00:00")
+        ref_init = pd.Timestamp(f"{Y}-{M}-{D}T00:00:00") # TODO: Make this the hour that is coming from the inference
         for ctime in ds_init.time.values[:2]:
             proc_time_step(ds_init, ctime, ref_init, output_dir=out_day, case="init", ens_mean=ens_mean)
     else:
@@ -210,11 +228,13 @@ def run_postprocess_day(geos_dir: str, pred_dir: str, post_out_dir: str,
         # ds_pred = xr.open_dataset(pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
         ds_pred = _open_xr_cf_safe(pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
         # ref_pred = np.datetime64(f"{Y}-{M}-{D}T12:00:00")
-        ref_pred = pd.Timestamp(f"{Y}-{M}-{D}T12:00:00")
+        ref_pred = pd.Timestamp(f"{Y}-{M}-{D}T12:00:00") # TODO: Modify to be +12
         for ctime in ds_pred.time.values:
             proc_time_step(ds_pred, ctime, ref_pred, output_dir=out_day, case="pred", ens_mean=ens_mean)
     else:
         logging.warning(f"No prediction files found for {Y}-{M}-{D} in {pred_dir}")
+    """
+    return
 
 
 def run_postprocess_multiday(
@@ -228,14 +248,22 @@ def run_postprocess_multiday(
     """Postprocess multiple days (inclusive) of GenCast outputs into CF-compliant NetCDFs.
     Calls run_postprocess_day for each day in [start_date, end_date].
     """
-    start_date = np.datetime64(start_date)
-    end_date   = np.datetime64(end_date)
-    date_range = np.arange(start_date, end_date + np.timedelta64(1, "D"), dtype="datetime64[D]")
+    # start_date = np.datetime64(start_date)
+    # end_date   = np.datetime64(end_date)
+    # date_range = np.arange(start_date, end_date + np.timedelta64(1, "D"), dtype="datetime64[D]")
+    fmt = "%Y-%m-%d:%H"
+
+    # Parse exact hour from input
+    start_ts = pd.to_datetime(start_date, format=fmt)
+    end_ts = pd.to_datetime(end_date,   format=fmt)
+
+    # Generate a date range in 12-hour increments
+    date_range = pd.date_range(start=start_ts, end=end_ts, freq="12H")
 
     for current_date in date_range:
-        y = int(str(current_date)[:4])
-        m = int(str(current_date)[5:7])
-        d = int(str(current_date)[8:10])
+        # y = int(str(current_date)[:4])
+        # m = int(str(current_date)[5:7])
+        # d = int(str(current_date)[8:10])
 
         logging.info("======================================================")
         logging.info(f"Postprocessing date: {current_date}")
@@ -243,7 +271,10 @@ def run_postprocess_multiday(
             geos_dir=geos_dir,
             pred_dir=pred_dir,
             post_out_dir=post_out_dir,
-            year=y, month=m, day=d,
+            date=current_date,
+            #year=current_date.year,
+            #month=current_date.month,
+            #day=current_date.day,
             ens_mean=ens_mean,
         )
         logging.info("Done postprocessing.")

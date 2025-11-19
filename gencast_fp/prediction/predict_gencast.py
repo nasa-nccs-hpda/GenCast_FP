@@ -8,8 +8,6 @@ import xarray
 import haiku as hk
 import jax
 
-from typing import Optional
-
 from graphcast import rollout
 from graphcast import xarray_jax
 from graphcast import normalization
