@@ -30,9 +30,17 @@ def xarray_load_ds(f):
 
 
 def load_dataset(input_dir, date, res_value, nsteps):
+
+    # Normalize whatever we get (str, np.datetime64, Timestamp) to a Timestamp
+    if not isinstance(date, pd.Timestamp):
+        date = pd.to_datetime(date)
+
+    # Match the filename convention: YYYY-MM-DDTHH
+    date_str = date.strftime("%Y-%m-%dT%H")
+
     # Resolve dataset paths
     input_file_value = (
-        f"gencast-dataset-source-geos_date-{date}"
+        f"gencast-dataset-source-geos_date-{date_str}"
         f"_res-{res_value}_levels-13_steps-{nsteps}.nc"
     )
     input_file = os.path.join(input_dir, input_file_value)
@@ -42,9 +50,18 @@ def load_dataset(input_dir, date, res_value, nsteps):
 
 
 def prepare_out_dir(out_dir, date, res_value, nsteps):
+
+    # Normalize whatever we get (str, np.datetime64, Timestamp) to a Timestamp
+    if not isinstance(date, pd.Timestamp):
+        date = pd.to_datetime(date)
+
     os.makedirs(out_dir, exist_ok=True)
+
+    # Match the filename convention: YYYY-MM-DDTHH
+    date_str = date.strftime("%Y-%m-%dT%H")
+
     out_file_value = (
-        f"gencast-dataset-prediction-geos_date-{date}"
+        f"gencast-dataset-prediction-geos_date-{date_str}"
         f"_res-{res_value}_levels-13_steps-{nsteps}.nc"
     )
     out_file = os.path.join(out_dir, out_file_value)
@@ -295,10 +312,8 @@ def run_predict_multiday(
 
     for current_date in date_range:
 
-    
         logging.info("======================================================")
         logging.info(f"Running prediction on date: {current_date}")
-        """
         out_fn = run_predict(
             current_date,
             input_dir,
@@ -311,7 +326,6 @@ def run_predict_multiday(
         )
         logging.info(f"Prediction saved to file: {out_fn}")
         logging.info("======================================================")
-        """
     return out_dir
 
 
