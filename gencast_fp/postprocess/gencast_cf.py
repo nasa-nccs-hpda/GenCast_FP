@@ -212,7 +212,8 @@ def run_postprocess_day(
     # Initial conditions (first two steps)
     init_files = sorted(
         geos_dir.glob(f"*source-geos*{Y:04d}-{M:02d}-{D:02d}T{H:02d}_*.nc"))
-    print(f"*source-geos*{Y:04d}-{M:02d}-{D:02d}T{H:02d}_*.nc", init_files)
+
+    print(H)
     """
     if init_files:
         # ds_init = xr.open_dataset(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
