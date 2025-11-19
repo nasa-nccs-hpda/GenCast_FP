@@ -87,31 +87,44 @@ def main():
         help="Disable ensemble mean (keep all ensemble members)")
 
     # ---------- run (all-in-one) ----------
-    run_args = sub.add_parser("run", help="Run preprocess → predict → postprocess")
-    run_args.add_argument("--start_date", type=str, required=True, help="Start date to process (YYYY-MM-DD:HH)")
-    run_args.add_argument("--end_date",   type=str, required=True, help="End date to process (YYYY-MM-DD:HH)")
+    run_args = sub.add_parser(
+        "run", help="Run preprocess → predict → postprocess")
+    run_args.add_argument(
+        "--start_date", type=str, required=True,
+        help="Start date to process (YYYY-MM-DD:HH)")
+    run_args.add_argument(
+        "--end_date",   type=str, required=True,
+        help="End date to process (YYYY-MM-DD:HH)")
 
-    run_args.add_argument("--output_dir", type=str, default="./output/preprocess",
-                          help="Directory for preprocess outputs (becomes predict input)")
-    run_args.add_argument("--expid",          type=str, default="f5295",
-                          help="Experiment ID used during preprocessing")
+    run_args.add_argument(
+        "--output_dir", type=str, default="./output/preprocess",
+        help="Directory for preprocess outputs (becomes predict input)")
+    run_args.add_argument(
+        "--expid", type=str, default="f5295",
+        help="Experiment ID used during preprocessing")
 
-    run_args.add_argument("--ckpt",     type=str, default=None,
-                          help="Path to GenCast .npz checkpoint (overrides container default)")
+    run_args.add_argument(
+        "--ckpt", type=str, default=None,
+        help="Path to GenCast .npz checkpoint (overrides container default)")
     run_args.add_argument("--nsteps",   type=int, default=30)
     run_args.add_argument("--res",      type=float, default=1.0)
     run_args.add_argument("--ensemble", type=int, default=8)
-    run_args.add_argument("--ens_mean", type=bool, default=True,
-                        help="Disable ensemble mean (keep all ensemble members)")
+    run_args.add_argument(
+        "--ens_mean", type=bool, default=True,
+        help="Disable ensemble mean (keep all ensemble members)")
 
-    run_args.add_argument("--skip_preprocess", action="store_true",
-                          help="Skip preprocess (assumes --preprocess_dir already exists)")
-    run_args.add_argument("--skip_predict",    action="store_true",
-                          help="Skip predict")
-    run_args.add_argument("--skip_post",       action="store_true",
-                          help="Skip postprocess")
-    run_args.add_argument("--container_meta",  type=str, default="/opt/qefm-core/gencast",
-                          help="Where to load default ckpt/configs if --ckpt not passed")
+    run_args.add_argument(
+        "--skip_preprocess", action="store_true",
+        help="Skip preprocess (assumes --preprocess_dir already exists)")
+    run_args.add_argument(
+        "--skip_predict", action="store_true",
+        help="Skip predict")
+    run_args.add_argument(
+        "--skip_post", action="store_true",
+        help="Skip postprocess")
+    run_args.add_argument(
+        "--container_meta", type=str, default="/opt/qefm-core/gencast",
+        help="Where to load default ckpt/configs if --ckpt not passed")
 
     args = parser.parse_args()
     t0 = time.time()

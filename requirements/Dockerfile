@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # --- pip baseline ---
 RUN python -m pip install --upgrade pip setuptools wheel
-RUN pip install nvidia-pyindex nvidia-cuda-runtime-cu12
+# RUN pip install nvidia-pyindex nvidia-cuda-runtime-cu12
+RUN pip install nvidia-cuda-runtime-cu12
 
 # --- micromamba (for esmpy/xesmf + compilers) ---
 ARG MAMBA_VERSION=1.5.8
