@@ -60,7 +60,6 @@ def _resolve_dt(ctime, ref_date):
 def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_mean=True):
 
     FILL_VALUE = np.float32(1.0e15)
-    fmodel = "FMGenCast"
 
     ds = ds_org.sel(time=ctime).expand_dims("time")
 
@@ -202,6 +201,7 @@ def run_postprocess_day(
     M = date.month
     D = date.day
     H = date.hour
+    # TODO: just place the next timestep here either 12 or 00
 
     out_day = Path(
         post_out_dir) / f"Y{Y:04d}" / f"M{M:02d}" / f"D{D:02d}"
@@ -213,20 +213,18 @@ def run_postprocess_day(
     init_files = sorted(
         geos_dir.glob(f"*source-geos*{Y:04d}-{M:02d}-{D:02d}T{H:02d}_*.nc"))
 
-    print(H)
-    """
     if init_files:
         # ds_init = xr.open_dataset(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
         ds_init = _open_xr_cf_safe(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
         # ref_init = np.datetime64(f"{Y}-{M}-{D}T00:00:00")
-        ref_init = pd.Timestamp(f"{Y}-{M}-{D}T00:00:00") # TODO: Make this the hour that is coming from the inference
+        ref_init = pd.Timestamp(f"{Y}-{M}-{D}T{H:02d}:00:00") # TODO: Modify to be the exact time
         for ctime in ds_init.time.values[:2]:
             proc_time_step(ds_init, ctime, ref_init, output_dir=out_day, case="init", ens_mean=ens_mean)
     else:
-        logging.warning(f"No GEOS init files found for {Y}-{M}-{D} in {geos_dir}")
+        logging.warning(f"No GEOS init files found for {Y}-{M}-{D}:{H:02d} in {geos_dir}")
 
     # Predictions (all steps)
-    pred_files = sorted(pred_dir.glob(f"*geos_date-{Y}-{M}-{D}_*.nc"))
+    pred_files = sorted(pred_dir.glob(f"*geos_date-{Y}-{M}-{D}T{H:02d}_*.nc"))
     if pred_files:
         # ds_pred = xr.open_dataset(pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
         ds_pred = _open_xr_cf_safe(pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
@@ -235,8 +233,8 @@ def run_postprocess_day(
         for ctime in ds_pred.time.values:
             proc_time_step(ds_pred, ctime, ref_pred, output_dir=out_day, case="pred", ens_mean=ens_mean)
     else:
-        logging.warning(f"No prediction files found for {Y}-{M}-{D} in {pred_dir}")
-    """
+        logging.warning(f"No prediction files found for {Y}-{M}-{D}:{H:02d} in {pred_dir}")
+
     return
 
 
