@@ -17,16 +17,19 @@ from gencast_fp.preprocess.fp_to_era5 import (
     fp_to_era5_hgrid,
 )
 
+
 def generate_dates(start_date: str, end_date: str):
     fmt = "%Y-%m-%d:%H"
     try:
         start = pd.to_datetime(start_date, format=fmt)
         end = pd.to_datetime(end_date, format=fmt)
     except:
-        raise ValueError("Please provide dates in format: YYYY-MM-DD-HH (e.g., '2020-01-01-00')")
+        raise ValueError(
+            "Please provide dates in format: YYYY-MM-DD-HH (e.g., '2020-01-01-00')")
     start_shift = start - pd.Timedelta(hours=12)
     dates = pd.date_range(start=start_shift, end=end, freq="12h")
     return dates
+
 
 def get_era5_lsm(lsm_file: str = "/css/era5/static/era5_static-allvar.nc"):
     ds = xr.open_dataset(lsm_file, engine="netcdf4")
@@ -37,6 +40,7 @@ def get_era5_lsm(lsm_file: str = "/css/era5/static/era5_static-allvar.nc"):
         .astype("float32")
     )
     return lsm
+
 
 def get_sst(sst_file: str, current_date: pd.Timestamp):
     # Read the binary SST file and extract the SST for the given date
@@ -55,29 +59,38 @@ def get_sst(sst_file: str, current_date: pd.Timestamp):
     rec_start_date = pd.Timestamp(int(header[1]), int(header[2]), int(header[3]))
     delta = (current_date - rec_start_date).days
     if delta < 0:
-        raise ValueError(f"SST file {sst_file} does not cover date {current_date}")
-    
+        raise ValueError(
+            f"SST file {sst_file} does not cover date {current_date}")
+
     # Read the SST record for the current date
     offset = theader_0 + delta * (theader + nx * ny * 4)
     with open(sst_file, "rb") as f:
         f.seek(offset, 0)
         data = np.fromfile(f, dtype=dtype, count=nx * ny)
         sst = data.reshape((ny, nx))
-    
+
     # Convert to xarray DataArray
     ds = sst_dataset("OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
     sst_np_time = sst[np.newaxis, :, :]  # add time dimension
-    time = xr.DataArray([current_date], dims=["time"], coords={"time": [current_date]})
+    time = xr.DataArray(
+        [current_date], dims=["time"], coords={"time": [current_date]})
     ds = ds.assign_coords(time=time)
-    ds['sst'] = xr.DataArray( sst_np_time, 
-                              dims=("time", "latitude", "longitude"), 
-                              coords={"time": time, "latitude": ds['latitude'], "longitude": ds['longitude']},
-                              attrs={"units": "K", 
-                                     "long_name": "Sea Surface Temperature",
-                                    "standard_name": "sea_surface_temperature"},
-                            )
-
+    ds['sst'] = xr.DataArray(
+        sst_np_time,
+        dims=("time", "latitude", "longitude"),
+        coords={
+            "time": time,
+            "latitude": ds['latitude'],
+            "longitude": ds['longitude']
+        },
+        attrs={
+            "units": "K",
+            "long_name": "Sea Surface Temperature",
+            "standard_name": "sea_surface_temperature"
+        },
+    )
     return ds
+
 
 def expand_dims(ds, steps):
     # Expand the time dimension of the dataset
@@ -241,7 +254,8 @@ def run_preprocess(start_date, end_date, outdir, expid):
             sst_ds = get_sst(Files["sst"], dt)
 
             if not sst_regridder:
-                sst_grid = sst_dataset("OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
+                sst_grid = sst_dataset(
+                    "OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
                 sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
             ai_Ex['sst'] = sst_regridder(sst_ds['sst'], keep_attrs=True)
 

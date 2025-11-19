@@ -3,7 +3,6 @@ import sys
 import time
 import logging
 import argparse
-from pathlib import Path
 
 from gencast_fp.preprocess.fp2e5 import run_preprocess
 from gencast_fp.prediction.predict_gencast import (
@@ -11,6 +10,7 @@ from gencast_fp.prediction.predict_gencast import (
     load_ckpt_files,
 )
 from gencast_fp.postprocess.gencast_cf import run_postprocess_multiday
+
 
 # -----------------------------------------------------------------------------
 # main
@@ -24,47 +24,72 @@ def main():
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     # ---------- preprocess ----------
-    preprocess_args = sub.add_parser("preprocess", help="Run preprocessing only")
-    preprocess_args.add_argument("--start_date", type=str, required=True, help="YYYY-MM-DD")
-    preprocess_args.add_argument("--end_date",   type=str, required=True, help="YYYY-MM-DD")
-    preprocess_args.add_argument("--output_dir",     type=str, default="./output/preprocess",
-                                 help="Output directory for preprocessed files")
-    preprocess_args.add_argument("--expid",      type=str, default="f5295",
-                                 help="Experiment ID for the output files")
+    preprocess_args = sub.add_parser(
+        "preprocess", help="Run preprocessing only")
+    preprocess_args.add_argument(
+        "--start_date", type=str, required=True,
+        help="Start date to process (YYYY-MM-DD:HH)")
+    preprocess_args.add_argument(
+        "--end_date", type=str, required=True,
+        help="End date to process (YYYY-MM-DD:HH)")
+    preprocess_args.add_argument(
+        "--output_dir", type=str,
+        default="./output/preprocess",
+        help="Output directory for preprocessed files")
+    preprocess_args.add_argument(
+        "--expid", type=str, default="f5295",
+        help="Experiment ID for the output files")
 
     # ---------- predict ----------
     predict_args = sub.add_parser("predict", help="Run prediction only")
-    predict_args.add_argument("--start_date", type=str, required=True, help="YYYY-MM-DD")
-    predict_args.add_argument("--end_date",   type=str, required=True, help="YYYY-MM-DD")
-    predict_args.add_argument("--input_dir",  "-i", required=True, type=str,
-                              help="Preprocessed input directory")
-    predict_args.add_argument("--output_dir",    "-o", required=True, type=str,
-                              help="Where to write predictions")
-    predict_args.add_argument("--ckpt",       type=str, default=None,
-                              help="Path to GenCast .npz checkpoint (overrides container default)")
+    predict_args.add_argument(
+        "--start_date", type=str, required=True,
+        help="Start date to process (YYYY-MM-DD:HH)")
+    predict_args.add_argument(
+        "--end_date", type=str, required=True,
+        help="End date to process (YYYY-MM-DD:HH)")
+    predict_args.add_argument(
+        "--input_dir", "-i", required=True, type=str,
+        help="Preprocessed input directory")
+    predict_args.add_argument(
+        "--output_dir", "-o",
+        required=True, type=str,
+        help="Where to write predictions")
+    predict_args.add_argument(
+        "--ckpt", type=str, default=None,
+        help="Path to GenCast .npz checkpoint (overrides container default)")
     predict_args.add_argument("--nsteps",     type=int, default=30)
     predict_args.add_argument("--res",        type=float, default=1.0)
     predict_args.add_argument("--ensemble",   type=int, default=8)
-    predict_args.add_argument("--container_meta",  type=str, default="/opt/qefm-core/gencast",
-                          help="Where to load default ckpt/configs if --ckpt not passed")
+    predict_args.add_argument(
+        "--container_meta", type=str, default="/opt/qefm-core/gencast",
+        help="Where to load default ckpt/configs if --ckpt not passed")
 
     # ---------- postprocess ----------
     post_args = sub.add_parser("postprocess", help="Run postprocessing only")
-    post_args.add_argument("--start_date", type=str, required=True, help="Start date (YYYY-MM-DD)")
-    post_args.add_argument("--end_date",   type=str, required=True, help="End date (YYYY-MM-DD)")
-    post_args.add_argument("--input_dir",   type=str, required=True,
-                        help="Directory with GEOS inputs (for initial conditions)")
-    post_args.add_argument("--predictions_dir",   type=str, required=True,
-                        help="Directory with GenCast predictions")
-    post_args.add_argument("--output_dir", type=str, default="./output/postprocess",
-                        help="Directory for CF-compliant NetCDF outputs")
-    post_args.add_argument("--ens_mean", type=bool, default=True,
-                        help="Disable ensemble mean (keep all ensemble members)")
+    post_args.add_argument(
+        "--start_date", type=str, required=True,
+        help="Start date to process (YYYY-MM-DD:HH)")
+    post_args.add_argument(
+        "--end_date", type=str, required=True,
+        help="End date to process (YYYY-MM-DD:HH)")
+    post_args.add_argument(
+        "--input_dir", type=str, required=True,
+        help="Directory with GEOS inputs (for initial conditions)")
+    post_args.add_argument(
+        "--predictions_dir",   type=str, required=True,
+        help="Directory with GenCast predictions")
+    post_args.add_argument(
+        "--output_dir", type=str, default="./output/postprocess",
+        help="Directory for CF-compliant NetCDF outputs")
+    post_args.add_argument(
+        "--ens_mean", type=bool, default=True,
+        help="Disable ensemble mean (keep all ensemble members)")
 
     # ---------- run (all-in-one) ----------
     run_args = sub.add_parser("run", help="Run preprocess → predict → postprocess")
-    run_args.add_argument("--start_date", type=str, required=True, help="YYYY-MM-DD")
-    run_args.add_argument("--end_date",   type=str, required=True, help="YYYY-MM-DD")
+    run_args.add_argument("--start_date", type=str, required=True, help="Start date to process (YYYY-MM-DD:HH)")
+    run_args.add_argument("--end_date",   type=str, required=True, help="End date to process (YYYY-MM-DD:HH)")
 
     run_args.add_argument("--output_dir", type=str, default="./output/preprocess",
                           help="Directory for preprocess outputs (becomes predict input)")
@@ -133,9 +158,13 @@ def main():
     elif args.cmd == "run":
 
         # Setting up directories
-        preprocess_output_dir = os.path.join(args.output_dir, '1-preprocessed')
-        prediction_output_dir = os.path.join(args.output_dir, '2-predictions')
-        postprocess_output_dir = os.path.join(args.output_dir, '3-postprocessed')
+        preprocess_output_dir = os.path.join(
+            args.output_dir, '1-preprocessed')
+        prediction_output_dir = os.path.join(
+            args.output_dir, '2-predictions')
+        postprocess_output_dir = os.path.join(
+            args.output_dir, '3-postprocessed')
+
         for edir in [
                     preprocess_output_dir, prediction_output_dir,
                     postprocess_output_dir
