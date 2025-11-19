@@ -1,8 +1,9 @@
 # gencast_fp/predict/predict.py
 import os
-import dataclasses
 import logging
+import dataclasses
 import numpy as np
+import pandas as pd
 import xarray
 import haiku as hk
 import jax
@@ -278,16 +279,26 @@ def run_predict_multiday(
     """Predict multiple days' worth of rollouts.
     Calls run_predict for each day in the start_date and end_date range."""
     #
-    start_date = np.datetime64(start_date)
-    end_date = np.datetime64(end_date)
-    date_range = np.arange(
-        start_date, end_date + np.timedelta64(1, "D"), dtype="datetime64[D]"
-    )
+    # start_date = np.datetime64(start_date)
+    # end_date = np.datetime64(end_date)
+    # date_range = np.arange(
+    #     start_date, end_date + np.timedelta64(1, "D"), dtype="datetime64[D]"
+    # )
+    fmt = "%Y-%m-%d:%H"
+
+    # Parse exact hour from input
+    start_ts = pd.to_datetime(start_date, format=fmt)
+    end_ts = pd.to_datetime(end_date,   format=fmt)
+
+    # Generate a date range in 12-hour increments
+    date_range = pd.date_range(start=start_ts, end=end_ts, freq="12H")
 
     for current_date in date_range:
 
+    
         logging.info("======================================================")
         logging.info(f"Running prediction on date: {current_date}")
+        """
         out_fn = run_predict(
             current_date,
             input_dir,
@@ -300,6 +311,7 @@ def run_predict_multiday(
         )
         logging.info(f"Prediction saved to file: {out_fn}")
         logging.info("======================================================")
+        """
     return out_dir
 
 

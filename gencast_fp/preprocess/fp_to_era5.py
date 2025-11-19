@@ -80,60 +80,69 @@ def _fixAttrs(v, ds, ref_attrs=e5_attrs):
         if len(ds[v].shape) > 2:
             ds[v].attrs[a] = ref_attrs[v][a]
 
-def _fixPoles_scalar(a5,ap):
+
+def _fixPoles_scalar(a5, ap):
     """
-    Fix scalar variable at poles. Assumes first and last latitudinal points are +/- 90
+    Fix scalar variable at poles. Assumes first and last
+    latitudinal points are +/- 90
     in both source (ap) and target (a5). Notice that ERA-5 has latitudinal
     grid north-to-south while FP is south-to-north.
-    
+
     Indexing is assumed to be one of the following:
         - a(lev,lat,lon)
         - a(lat,lon)
-        
+
     """
     shape = ap.shape
     if len(shape) == 3:    # 3D
         for k in range(shape[0]):
-            a5[k, 0,:] = ap[k,-1,:].mean() # north pole
-            a5[k,-1,:] = ap[k, 0,:].mean() # south pole
+            a5[k, 0, :] = ap[k,-1, :].mean()  # north pole
+            a5[k, -1, :] = ap[k, 0, :].mean()  # south pole
     elif len(shape) == 2:  # 2D
-        a5[0,:]  = ap[-1,:].mean(axis=0) # north pole
-        a5[-1,:] = ap[ 0,:].mean(axis=0) # south pole       
+        a5[0, :]  = ap[-1, :].mean(axis=0)  # north pole
+        a5[-1, :] = ap[0, :].mean(axis=0)  # south pole       
     else:
         print(ap.shape)
         raise ValueError('Invalid shape of input variable')
-        
+
+
 def _fixPoles_vector(u5, v5, up, vp):
     """
-    Fix vector variables at poles. Assumes first and last latitudinal points are +/- 90
+    Fix vector variables at poles. Assumes first and
+    last latitudinal points are +/- 90
     in both source (ap) and target (a5). Notice that ERA-5 has latitudinal grid
     north-to-south while FP is south-to-north.
-    
+
     This is implemented with a simple linear interpolation in longitude.
-    
+
     """
 
     lon_p = up.lon
-    lon_5 = u5.longitude 
+    lon_5 = u5.longitude
 
     shape = up.shape
-    
+
     if len(shape) == 3:    # 3D
         for k in range(shape[0]):
-            u5[k, 0].data[:] = np.interp(lon_5, lon_p, up[k,-1].data[:], period=360.)
-            v5[k, 0].data[:] = np.interp(lon_5, lon_p, vp[k,-1].data[:], period=360.)        
-            u5[k,-1].data[:] = np.interp(lon_5, lon_p, up[k, 0].data[:], period=360.)
-            v5[k,-1].data[:] = np.interp(lon_5, lon_p, vp[k, 0].data[:], period=360.)
-            
+            u5[k, 0].data[:] = np.interp(
+                lon_5, lon_p, up[k,-1].data[:], period=360.)
+            v5[k, 0].data[:] = np.interp(
+                lon_5, lon_p, vp[k,-1].data[:], period=360.)        
+            u5[k, -1].data[:] = np.interp(
+                lon_5, lon_p, up[k, 0].data[:], period=360.)
+            v5[k, -1].data[:] = np.interp(
+                lon_5, lon_p, vp[k, 0].data[:], period=360.)
+
     elif len(shape) == 2:  # 2D
-        u5[ 0].data[:] = np.interp(lon_5, lon_p, up[-1].data[:], period=360.)
-        v5[ 0].data[:] = np.interp(lon_5, lon_p, vp[-1].data[:], period=360.)        
-        u5[-1].data[:] = np.interp(lon_5, lon_p, up[ 0].data[:], period=360.)
-        v5[-1].data[:] = np.interp(lon_5, lon_p, vp[ 0].data[:], period=360.)             
- 
+        u5[0].data[:] = np.interp(lon_5, lon_p, up[-1].data[:], period=360.)
+        v5[0].data[:] = np.interp(lon_5, lon_p, vp[-1].data[:], period=360.)
+        u5[-1].data[:] = np.interp(lon_5, lon_p, up[0].data[:], period=360.)
+        v5[-1].data[:] = np.interp(lon_5, lon_p, vp[0].data[:], period=360.)
+
     else:
         print(up.shape)
         raise ValueError('Invalid shape of input variable')
+
 
 def _scalar_vectors(ds):
     """
@@ -144,7 +153,7 @@ def _scalar_vectors(ds):
     # -------------------------
     U, V, S = {}, {}, []
     for v in ds.data_vars:
-        if len(ds[v].shape) < 3: 
+        if len(ds[v].shape) < 3:
             continue
         std_name = ds[v].attrs['standard_name']
         if 'eastward' in std_name:
@@ -158,15 +167,14 @@ def _scalar_vectors(ds):
     # ------------
     VP = []
     for u_ in U:
-        v_ = u_.replace('eastward','northward')
-        p = (U[u_],V[v_])
+        v_ = u_.replace('eastward', 'northward')
+        p = (U[u_], V[v_])
         VP += [p,]
-        
-    return (S, VP)
-    
-#--
 
-def _gat2s ( template, time, expid='f5295' ):
+    return (S, VP)
+
+
+def _gat2s(template, time, expid='f5295'):
     """
     Expand GrADS style templates/
     """
@@ -180,6 +188,7 @@ def _gat2s ( template, time, expid='f5295' ):
     return template.replace('%y4',y4).replace('%m2',m2).\
                     replace('%d2',d2).replace('%h2',h2).\
                     replace('%n2',n2).replace('%expid',expid)
+
 
 def discover_files(time, outdir='./', expid='f5295'):
     """
