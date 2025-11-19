@@ -26,48 +26,53 @@ from gencast_fp.preprocess.eta2xprs import LOG
 
 import gencast_fp.preprocess.eta as eta
 
+
 # Pressure levels for AI/ML ERA-5 like file
 # -----------------------------------------
-e5_plevs  = np.array([50,100,150,200,250,300,400,500,600,700,850,925,1000]) # hPa
+e5_plevs  = np.array(
+    [
+        50, 100, 150, 200, 250, 300, 400,
+        500, 600, 700, 850, 925, 1000
+    ]
+)  # hPa
 
 GRAV = 9.80665
 
 # Attribute fixer
 # ---------------
 e5_attrs = dict(
-w   = {'long_name': 'Vertical velocity', 'units': 'Pa s**-1',
-       'standard_name': 'lagrangian_tendency_of_air_pressure'},
-q   = {'long_name': 'Specific humidity', 'units': 'kg kg**-1',
-       'standard_name': 'specific_humidity'},
-t   = {'long_name': 'Temperature', 'units': 'K',
-       'standard_name': 'air_temperature'},
-u   = {'long_name': 'U component of wind', 'units': 'm s**-1',
-       'standard_name': 'eastward_wind'},
-v   = {'long_name': 'V component of wind', 'units': 'm s**-1',
-       'standard_name': 'northward_wind'},
-p   = {'long_name': 'Mid-layer Pressure', 'units': 'Pa',
-       'standard_name': 'air_pressure'},
-hgt = {'long_name': 'Geopotential Height', 'units': 'm',
-       'standard_name': 'geopotential_height'},
-z   = {'long_name': 'Geopotential', 'units': 'm**2 s**-2',
-       'standard_name': 'geopotential'},
-sp  = {'long_name': 'Surface pressure', 'units': 'Pa',
-       'standard_name': 'surface_air_pressure'},
-msl = {'long_name': 'Mean sea level pressure', 'units': 'Pa',
-       'standard_name': 'air_pressure_at_mean_sea_level'},
-t2m = {'long_name': '2 metre temperature', 'units': 'K',
-       'standard_name': 'air_temperature'},
-skt = {'long_name': 'Skin temperature', 'units': 'K',
-       'standard_name': 'surface_skin_temperature'},
-u10 = {'long_name': '10 metre U wind component', 'units': 'm s**-1',
-       'standard_name': 'eastward_wind'},
-v10 = {'long_name': '10 metre V wind component', 'units': 'm s**-1',
-       'standard_name': 'northward_wind'},
+    w={'long_name': 'Vertical velocity', 'units': 'Pa s**-1',
+        'standard_name': 'lagrangian_tendency_of_air_pressure'},
+    q={'long_name': 'Specific humidity', 'units': 'kg kg**-1',
+        'standard_name': 'specific_humidity'},
+    t={'long_name': 'Temperature', 'units': 'K',
+        'standard_name': 'air_temperature'},
+    u={'long_name': 'U component of wind', 'units': 'm s**-1',
+        'standard_name': 'eastward_wind'},
+    v={'long_name': 'V component of wind', 'units': 'm s**-1',
+        'standard_name': 'northward_wind'},
+    p={'long_name': 'Mid-layer Pressure', 'units': 'Pa',
+        'standard_name': 'air_pressure'},
+    hgt={'long_name': 'Geopotential Height', 'units': 'm',
+         'standard_name': 'geopotential_height'},
+    z={'long_name': 'Geopotential', 'units': 'm**2 s**-2',
+        'standard_name': 'geopotential'},
+    sp={'long_name': 'Surface pressure', 'units': 'Pa',
+        'standard_name': 'surface_air_pressure'},
+    msl={'long_name': 'Mean sea level pressure', 'units': 'Pa',
+         'standard_name': 'air_pressure_at_mean_sea_level'},
+    t2m={'long_name': '2 metre temperature', 'units': 'K',
+         'standard_name': 'air_temperature'},
+    skt={'long_name': 'Skin temperature', 'units': 'K',
+         'standard_name': 'surface_skin_temperature'},
+    u10={'long_name': '10 metre U wind component', 'units': 'm s**-1',
+         'standard_name': 'eastward_wind'},
+    v10={'long_name': '10 metre V wind component', 'units': 'm s**-1',
+         'standard_name': 'northward_wind'},
 )
 
-#--
 
-def _fixAttrs ( v, ds, ref_attrs=e5_attrs):
+def _fixAttrs(v, ds, ref_attrs=e5_attrs):
     """
     Fix key attributes.
     """
