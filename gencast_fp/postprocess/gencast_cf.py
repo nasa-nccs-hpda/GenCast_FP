@@ -201,21 +201,18 @@ def run_postprocess_day(
     Y = date.year
     M = date.month
     D = date.day
+    H = date.hour
 
     out_day = Path(
         post_out_dir) / f"Y{Y:04d}" / f"M{M:02d}" / f"D{D:02d}"
     print(out_day)
 
-    """
     out_day.mkdir(parents=True, exist_ok=True)
 
-    Y = f"{year:04d}"
-    M = f"{month:02d}"
-    D = f"{day:02d}"
-    # TODO: add the hour here
-
     # Initial conditions (first two steps)
-    init_files = sorted(geos_dir.glob(f"*source-geos*{Y}-{M}-{D}_*.nc")) # TODO: add the hour to this regex
+    init_files = sorted(geos_dir.glob(f"*source-geos*{Y}-{M}-{D}T{H:02d}_*.nc"))
+    print(init_files)
+    """
     if init_files:
         # ds_init = xr.open_dataset(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
         ds_init = _open_xr_cf_safe(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
