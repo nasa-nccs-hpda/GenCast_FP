@@ -19,6 +19,9 @@ sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
     --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
 ```
 
+/discover/nobackup/projects/QEFM/containers/gencast-fp-latest_jordan
+
+
 ## Dependencies
 
 Additional details and flexibility of the commands are listed below.
@@ -55,17 +58,21 @@ are listed below. The pipeline has 3 steps: preprocess, predict, and postprocess
 ### Preprocessing
 
 ```bash
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py preprocess -h
-usage: gencast_fp_cli.py preprocess [-h] --start_date START_DATE --end_date END_DATE [--output_dir OUTPUT_DIR] [--expid EXPID]
+singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-latest_jordan gencast-fp preprocess -h
+WARNING: underlay of /usr/bin/nvidia-smi required more than 50 (225) bind mounts
+usage: gencast_fp_cli.py preprocess [-h] --start_date START_DATE --end_date END_DATE [--output_dir OUTPUT_DIR] [--expid EXPID] [--res_value RES_VALUE] [--nsteps NSTEPS]
 
 options:
   -h, --help            show this help message and exit
   --start_date START_DATE
-                        YYYY-MM-DD
-  --end_date END_DATE   YYYY-MM-DD
+                        Start date to process (YYYY-MM-DD:HH)
+  --end_date END_DATE   End date to process (YYYY-MM-DD:HH)
   --output_dir OUTPUT_DIR
                         Output directory for preprocessed files
   --expid EXPID         Experiment ID for the output files
+  --res_value RES_VALUE
+                        Resoluton (default 1.0 resolution)
+  --nsteps NSTEPS       Number of steps for rollout (default 30, 15 days)
 ```
 
 ### Prediction
