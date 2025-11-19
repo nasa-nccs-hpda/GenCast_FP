@@ -202,12 +202,16 @@ def to_gencast_input(ds):
     return ds
 
 
-def run_preprocess(start_date, end_date, outdir, expid):
+def run_preprocess(
+            start_date: str,
+            end_date: str,
+            outdir: str,
+            expid: str,
+            res_value: float = 1.0,  # 1.0 resolution
+            nsteps: int = 30  # 15 day rollout
+        ):
 
     os.makedirs(outdir, exist_ok=True)
-
-    res_value = 1.0  # 1.0 resolution
-    nsteps = 30  # 15 day rollout
 
     dates = generate_dates(start_date, end_date)
     pairs = [(dates[i], dates[i+1]) for i in range(len(dates)-1)]
@@ -304,7 +308,6 @@ def main():
         required=True,
         help="End date to process (YYYY-MM-DD:HH)",
     )
-
     parser.add_argument(
         "--outdir",
         type=str,
@@ -317,11 +320,30 @@ def main():
         default="f5295",
         help="Experiment ID for the output files",
     )
+    parser.add_argument(
+        "--res_value",
+        type=float,
+        default=1.0,
+        help="Resoluton (default 1.0 resolution)",
+    )
+    parser.add_argument(
+        "--nsteps",
+        type=int,
+        default=30,
+        help="Number of steps for rollout (default 30, 15 days)",
+    )
 
     args = parser.parse_args()
 
     # Run preprocessing function
-    run_preprocess(args.start_date, args.end_date, args.outdir, args.expid)
+    run_preprocess(
+        args.start_date,
+        args.end_date,
+        args.outdir,
+        args.expid,
+        args.res_value,
+        args.nsteps
+    )
 
     return
 

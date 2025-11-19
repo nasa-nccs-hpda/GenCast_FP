@@ -39,6 +39,18 @@ def main():
     preprocess_args.add_argument(
         "--expid", type=str, default="f5295",
         help="Experiment ID for the output files")
+    preprocess_args.add_argument(
+        "--res_value",
+        type=float,
+        default=1.0,
+        help="Resoluton (default 1.0 resolution)",
+    )
+    preprocess_args.add_argument(
+        "--nsteps",
+        type=int,
+        default=30,
+        help="Number of steps for rollout (default 30, 15 days)",
+    )
 
     # ---------- predict ----------
     predict_args = sub.add_parser("predict", help="Run prediction only")
@@ -58,9 +70,9 @@ def main():
     predict_args.add_argument(
         "--ckpt", type=str, default=None,
         help="Path to GenCast .npz checkpoint (overrides container default)")
-    predict_args.add_argument("--nsteps",     type=int, default=30)
-    predict_args.add_argument("--res",        type=float, default=1.0)
-    predict_args.add_argument("--ensemble",   type=int, default=8)
+    predict_args.add_argument("--nsteps", type=int, default=30)
+    predict_args.add_argument("--res_value", type=float, default=1.0)
+    predict_args.add_argument("--ensemble", type=int, default=8)
     predict_args.add_argument(
         "--container_meta", type=str, default="/opt/qefm-core/gencast",
         help="Where to load default ckpt/configs if --ckpt not passed")
@@ -106,8 +118,8 @@ def main():
     run_args.add_argument(
         "--ckpt", type=str, default=None,
         help="Path to GenCast .npz checkpoint (overrides container default)")
-    run_args.add_argument("--nsteps",   type=int, default=30)
-    run_args.add_argument("--res",      type=float, default=1.0)
+    run_args.add_argument("--nsteps", type=int, default=30)
+    run_args.add_argument("--res_value", type=float, default=1.0)
     run_args.add_argument("--ensemble", type=int, default=8)
     run_args.add_argument(
         "--ens_mean", type=bool, default=True,
@@ -130,10 +142,17 @@ def main():
     t0 = time.time()
 
     if args.cmd == "preprocess":
+
         logging.info("Starting preprocessing")
 
         run_preprocess(
-            args.start_date, args.end_date, args.output_dir, args.expid)
+            args.start_date,
+            args.end_date,
+            args.output_dir,
+            args.expid,
+            args.res_value,
+            args.nsteps
+        )
 
     elif args.cmd == "predict":
 
@@ -149,7 +168,7 @@ def main():
             end_date=args.end_date,
             input_dir=args.input_dir,
             out_dir=args.output_dir,
-            res_value=args.res,
+            res_value=args.res_value,
             nsteps=args.nsteps,
             ensemble_members=args.ensemble,
             container_meta=args.container_meta,
@@ -188,8 +207,12 @@ def main():
         if not args.skip_preprocess:
             logging.info(f"[1/3] Preprocess → {preprocess_output_dir}")
             run_preprocess(
-                args.start_date, args.end_date,
-                preprocess_output_dir, args.expid
+                args.start_date,
+                args.end_date,
+                preprocess_output_dir,
+                args.expid,
+                args.res_value,
+                args.nsteps,
             )
         else:
             logging.info("[1/3] Skipping preprocess")
@@ -207,7 +230,7 @@ def main():
                 end_date=args.end_date,
                 input_dir=preprocess_output_dir,
                 out_dir=prediction_output_dir,
-                res_value=args.res,
+                res_value=args.res_value,
                 nsteps=args.nsteps,
                 ensemble_members=args.ensemble,
                 container_meta=args.container_meta,
