@@ -197,12 +197,16 @@ def run_postprocess_day(
     """
     geos_dir = Path(geos_dir)
     pred_dir = Path(pred_dir)
-    print("geos_dir", geos_dir)
-    print("pred_dir", pred_dir)
+
+    Y = date.year
+    M = date.month
+    D = date.day
+
+    out_day = Path(
+        post_out_dir) / f"Y{Y:04d}" / f"M{M:02d}" / f"D{D:02d}"
+    print(out_day)
 
     """
-    out_day = Path(
-        post_out_dir) / f"Y{year:04d}" / f"M{month:02d}" / f"D{day:02d}"
     out_day.mkdir(parents=True, exist_ok=True)
 
     Y = f"{year:04d}"
