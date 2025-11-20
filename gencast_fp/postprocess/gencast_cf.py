@@ -185,7 +185,13 @@ def proc_time_step(
             f"{tstamp}_res-1.0_levels-13{suffix}"
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    ds.to_netcdf(output_dir / fname, encoding=encoding, engine="netcdf4")
+
+    # removing batch dimension during postprocessing
+    ds.isel(batch=0).to_netcdf(
+        output_dir / fname,
+        encoding=encoding,
+        engine="netcdf4"
+    )
     return
 
 
