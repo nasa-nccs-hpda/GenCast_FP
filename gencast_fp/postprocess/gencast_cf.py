@@ -158,7 +158,8 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_m
 
     # --- globals ---
     ds.attrs = {
-        "title": f"FMGenCast forecast start at {YYYY}-{MM}-{DD}T12:00:00", # TODO: FIX THIS TIME with +12
+        # TODO: FIX THIS TIME with +12?
+        "title": f"FMGenCast forecast start at {YYYY}-{MM}-{DD}T{HH}:00:00",
         "institution": "NASA CISTO Data Science Group",
         "source": "FMGenCast model output",
         "Conventions": "CF",
@@ -185,10 +186,6 @@ def run_postprocess_day(
                 pred_dir: str,
                 post_out_dir: str,
                 date: str,
-                # year: int,
-                # month: int,
-                # day: int,
-                # hour: str,
                 ens_mean: bool = True
             ) -> None:
     """
@@ -202,14 +199,9 @@ def run_postprocess_day(
     M = date.month
     D = date.day
     H = date.hour
-    # TODO: just place the next timestep here either 12 or 00
-    # start - pd.Timedelta(hours=12)
-
-    print("CHECKING ON THE TYPE", type(date), date)
 
     out_day = Path(
         post_out_dir) / f"Y{Y:04d}" / f"M{M:02d}" / f"D{D:02d}"
-    print(out_day)
 
     out_day.mkdir(parents=True, exist_ok=True)
 
@@ -279,9 +271,6 @@ def run_postprocess_multiday(
     date_range = pd.date_range(start=start_ts, end=end_ts, freq="12h")
 
     for current_date in date_range:
-        # y = int(str(current_date)[:4])
-        # m = int(str(current_date)[5:7])
-        # d = int(str(current_date)[8:10])
 
         logging.info("======================================================")
         logging.info(f"Postprocessing date: {current_date}")
@@ -290,9 +279,6 @@ def run_postprocess_multiday(
             pred_dir=pred_dir,
             post_out_dir=post_out_dir,
             date=current_date,
-            #year=current_date.year,
-            #month=current_date.month,
-            #day=current_date.day,
             ens_mean=ens_mean,
         )
         logging.info("Done postprocessing.")

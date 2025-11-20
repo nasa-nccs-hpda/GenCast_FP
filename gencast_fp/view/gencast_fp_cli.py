@@ -30,7 +30,7 @@ def main():
         "--start_date", type=str, required=True,
         help="Start date to process (YYYY-MM-DD:HH)")
     preprocess_args.add_argument(
-        "--end_date", type=str, required=True,
+        "--end_date", type=str, required=False, default=None,
         help="End date to process (YYYY-MM-DD:HH)")
     preprocess_args.add_argument(
         "--output_dir", type=str,
@@ -58,7 +58,7 @@ def main():
         "--start_date", type=str, required=True,
         help="Start date to process (YYYY-MM-DD:HH)")
     predict_args.add_argument(
-        "--end_date", type=str, required=True,
+        "--end_date", type=str, required=False, default=None,
         help="End date to process (YYYY-MM-DD:HH)")
     predict_args.add_argument(
         "--input_dir", "-i", required=True, type=str,
@@ -83,7 +83,7 @@ def main():
         "--start_date", type=str, required=True,
         help="Start date to process (YYYY-MM-DD:HH)")
     post_args.add_argument(
-        "--end_date", type=str, required=True,
+        "--end_date", type=str, required=False, default=None,
         help="End date to process (YYYY-MM-DD:HH)")
     post_args.add_argument(
         "--input_dir", type=str, required=True,
@@ -105,7 +105,7 @@ def main():
         "--start_date", type=str, required=True,
         help="Start date to process (YYYY-MM-DD:HH)")
     run_args.add_argument(
-        "--end_date",   type=str, required=True,
+        "--end_date",   type=str, required=False, default=None,
         help="End date to process (YYYY-MM-DD:HH)")
 
     run_args.add_argument(
@@ -140,6 +140,10 @@ def main():
 
     args = parser.parse_args()
     t0 = time.time()
+
+    # if end_date is missing, set it equal to start_date
+    if args.end_date is None:
+        args.end_date = args.start_date
 
     if args.cmd == "preprocess":
 
