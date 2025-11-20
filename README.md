@@ -4,7 +4,7 @@
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://github.com/nasa-nccs-hpda/GenCast_FP/README.md)
 [![Build Docker](https://github.com/nasa-nccs-hpda/GenCast_FP/actions/workflows/dockerhub.yml/badge.svg?event=release)](https://github.com/nasa-nccs-hpda/GenCast_FP/actions/workflows/dockerhub.yml)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/nasa-nccs-hpda/GenCast_FP)
-![Docker Image Version](https://img.shields.io/docker/v/nasanccs/GenCast_FP?label=Docker)
+![Docker Image Version](https://img.shields.io/docker/v/nasanccs/gencast-fp?label=Docker)
 ![License](https://img.shields.io/github/license/nasa-nccs-hpda/GenCast_FP)
 
 This workflow is to generate GenCast predictions with GEOS-FP as inputs.
