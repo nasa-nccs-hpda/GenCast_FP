@@ -244,7 +244,7 @@ def run_postprocess_day(
             pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
         # ref_pred = np.datetime64(f"{Y}-{M}-{D}T12:00:00")
         # pd.Timestamp(f"{Y}-{M}-{D}T12:00:00") # TODO: Modify to be +12?
-        ref_pred = date + pd.Timedelta(hours=12)
+        ref_pred = date # removing for now to test + pd.Timedelta(hours=12)
         for ctime in ds_pred.time.values:
             proc_time_step(
                 ds_pred, ctime, ref_pred,
