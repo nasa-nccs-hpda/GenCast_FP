@@ -306,7 +306,7 @@ def run_predict_multiday(
     end_ts = pd.to_datetime(end_date,   format=fmt)
 
     # Generate a date range in 12-hour increments
-    date_range = pd.date_range(start=start_ts, end=end_ts, freq="12H")
+    date_range = pd.date_range(start=start_ts, end=end_ts, freq="12h")
 
     for current_date in date_range:
 

@@ -203,6 +203,7 @@ def run_postprocess_day(
     D = date.day
     H = date.hour
     # TODO: just place the next timestep here either 12 or 00
+    # start - pd.Timedelta(hours=12)
 
     print("CHECKING ON THE TYPE", type(date), date)
 
@@ -221,7 +222,7 @@ def run_postprocess_day(
         ds_init = _open_xr_cf_safe(init_files[0]).drop_vars(
             "land_sea_mask", errors="ignore")
         # ref_init = np.datetime64(f"{Y}-{M}-{D}T00:00:00")
-        ref_init = pd.Timestamp(f"{Y}-{M}-{D}T{H:02d}:00:00")
+        ref_init = date  # pd.Timestamp(f"{Y}-{M}-{D}T{H:02d}:00:00")
         for ctime in ds_init.time.values[:2]:
             proc_time_step(
                 ds_init, ctime, ref_init,
@@ -240,7 +241,7 @@ def run_postprocess_day(
         ds_pred = _open_xr_cf_safe(
             pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
         # ref_pred = np.datetime64(f"{Y}-{M}-{D}T12:00:00")
-        ref_pred = pd.Timestamp(f"{Y}-{M}-{D}T12:00:00") # TODO: Modify to be +12
+        ref_pred = date + pd.Timedelta(hours=12)  # pd.Timestamp(f"{Y}-{M}-{D}T12:00:00") # TODO: Modify to be +12
         for ctime in ds_pred.time.values:
             proc_time_step(
                 ds_pred, ctime, ref_pred,
@@ -275,7 +276,7 @@ def run_postprocess_multiday(
     end_ts = pd.to_datetime(end_date,   format=fmt)
 
     # Generate a date range in 12-hour increments
-    date_range = pd.date_range(start=start_ts, end=end_ts, freq="12H")
+    date_range = pd.date_range(start=start_ts, end=end_ts, freq="12h")
 
     for current_date in date_range:
         # y = int(str(current_date)[:4])
