@@ -1,5 +1,12 @@
 # GenCast-FP end-to-end workflow
 
+[![DOI](https://zenodo.org/badge/1042752062.svg)](https://doi.org/10.5281/zenodo.17662736)
+[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://github.com/nasa-nccs-hpda/GenCast_FP/README.md)
+[![Build Docker](https://github.com/nasa-nccs-hpda/GenCast_FP/actions/workflows/dockerhub.yml/badge.svg?event=release)](https://github.com/nasa-nccs-hpda/GenCast_FP/actions/workflows/dockerhub.yml)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/nasa-nccs-hpda/GenCast_FP)
+![Docker Image Version](https://img.shields.io/docker/v/nasanccs/GenCast_FP?label=Docker)
+![License](https://img.shields.io/github/license/nasa-nccs-hpda/GenCast_FP)
+
 This workflow is to generate GenCast predictions with GEOS-FP as inputs.
 Follow the steps below to set up and run. The workflow currently only works on DISCOVER filesystems.
 
@@ -9,18 +16,58 @@ The following command runs preprocessing, prediction, and postprocessing for a g
 range using the Discover A100 systems. You will need access to a single GPU to run this workflow.
 Note that the following command can be run from any Discover login node.
 
+For a single day (end_date defaults to the same day):
+
 ```bash
 sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
     --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
     --wrap="module load singularity; singularity exec --nv \
     -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
     /discover/nobackup/projects/QEFM/containers/gencast-fp-latest \
-    gencast-fp run --start_date 2024-12-01 --end_date 2024-12-03 \
+    gencast-fp run --start_date 2025-11-20:00 \
     --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
 ```
 
-/discover/nobackup/projects/QEFM/containers/gencast-fp-latest_jordan
+if you want to run for multiple past days:
 
+```bash
+sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
+    --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
+    --wrap="module load singularity; singularity exec --nv \
+    -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
+    /discover/nobackup/projects/QEFM/containers/gencast-fp-latest \
+    gencast-fp run --start_date 2025-11-10:00 --end_date 2025-11-15:00 \
+    --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
+```
+
+Example slurm file submission script:
+
+```bash
+#!/bin/bash
+#SBATCH --partition=gpu_a100
+#SBATCH --constraint=rome
+#SBATCH --ntasks=10
+#SBATCH --gres=gpu:1
+#SBATCH --mem-per-gpu=100G
+#SBATCH --time=10:00:00
+#SBATCH --job-name=gencast-fp
+#SBATCH --output=gencast-fp_%j.out
+#SBATCH --error=gencast-fp_%j.err
+
+
+# Load modules
+source /usr/share/modules/init/bash
+module purge
+module load singularity
+
+# Run the container
+singularity exec --nv \
+    -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
+    /discover/nobackup/projects/QEFM/containers/gencast-fp-latest \
+    gencast-fp run \
+    --start_date 2025-11-20:00 \
+    --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run
+```
 
 ## Dependencies
 
