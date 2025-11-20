@@ -57,7 +57,10 @@ def _resolve_dt(ctime, ref_date):
     return pd.to_datetime(ref_ns) + pd.to_timedelta(float(c), unit='h')
 
 
-def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_mean=True):
+def proc_time_step(
+            ds_org, ctime, ref_date,
+            output_dir: Path, case="init", ens_mean=True
+        ):
 
     FILL_VALUE = np.float32(1.0e15)
 
@@ -65,7 +68,8 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_m
 
     # Time
     # dt = pd.to_datetime(ref_date + ctime)
-    dt = _resolve_dt(ctime, ref_date)  # instead of: pd.to_datetime(ref_date + ctime)
+    # instead of: pd.to_datetime(ref_date + ctime)
+    dt = _resolve_dt(ctime, ref_date)
     HH = dt.strftime("%H")
     YYYY = dt.strftime("%Y")
     MM = dt.strftime("%m")
@@ -139,8 +143,10 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_m
         "PRECTOT": {"long_name": "total_precipitation", "units": "m"},
         "U":    {"long_name": "eastward_wind", "units": "m s-1"},
         "V":    {"long_name": "northward_wind", "units": "m s-1"},
-        "OMEGA": {"long_name": "vertical_pressure_velocity", "units": "Pa s-1"},
-        "PHIS": {"long_name": "surface_geopotential_height", "units": "m+2 s-2"},
+        "OMEGA": {
+            "long_name": "vertical_pressure_velocity", "units": "Pa s-1"},
+        "PHIS": {
+            "long_name": "surface_geopotential_height", "units": "m+2 s-2"},
     }
 
     valid_rename = {k: v for k, v in rename_dict.items() if k in ds.variables}
@@ -174,7 +180,9 @@ def proc_time_step(ds_org, ctime, ref_date, output_dir: Path, case="init", ens_m
         fname = f"FMGenCast-initial-geos_date-{tstamp}_res-1.0_levels-13.nc"
     else:
         suffix = "_ens-mean.nc" if ens_mean else ".nc"
-        fname = f"FMGenCast-prediction-geos_date-{tstamp}_res-1.0_levels-13{suffix}"
+        fname = \
+            "FMGenCast-prediction-geos_date-" + \
+            f"{tstamp}_res-1.0_levels-13{suffix}"
 
     output_dir.mkdir(parents=True, exist_ok=True)
     ds.to_netcdf(output_dir / fname, encoding=encoding, engine="netcdf4")
@@ -210,7 +218,8 @@ def run_postprocess_day(
         geos_dir.glob(f"*source-geos*{Y:04d}-{M:02d}-{D:02d}T{H:02d}_*.nc"))
 
     if init_files:
-        # ds_init = xr.open_dataset(init_files[0]).drop_vars("land_sea_mask", errors="ignore")
+        # ds_init = xr.open_dataset(
+        # init_files[0]).drop_vars("land_sea_mask", errors="ignore")
         ds_init = _open_xr_cf_safe(init_files[0]).drop_vars(
             "land_sea_mask", errors="ignore")
         # ref_init = np.datetime64(f"{Y}-{M}-{D}T00:00:00")
@@ -229,11 +238,13 @@ def run_postprocess_day(
     pred_files = sorted(
         pred_dir.glob(f"*geos_date-{Y:04d}-{M:02d}-{D:02d}T{H:02d}_*.nc"))
     if pred_files:
-        # ds_pred = xr.open_dataset(pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
+        # ds_pred = xr.open_dataset(
+        # pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
         ds_pred = _open_xr_cf_safe(
             pred_files[0]).drop_vars("land_sea_mask", errors="ignore")
         # ref_pred = np.datetime64(f"{Y}-{M}-{D}T12:00:00")
-        ref_pred = date + pd.Timedelta(hours=12)  # pd.Timestamp(f"{Y}-{M}-{D}T12:00:00") # TODO: Modify to be +12
+        # pd.Timestamp(f"{Y}-{M}-{D}T12:00:00") # TODO: Modify to be +12?
+        ref_pred = date + pd.Timedelta(hours=12)
         for ctime in ds_pred.time.values:
             proc_time_step(
                 ds_pred, ctime, ref_pred,
@@ -255,12 +266,16 @@ def run_postprocess_multiday(
     post_out_dir: str,
     ens_mean: bool = True,
 ):
-    """Postprocess multiple days (inclusive) of GenCast outputs into CF-compliant NetCDFs.
+    """
+    Postprocess multiple days (inclusive) of
+    GenCast outputs into CF-compliant NetCDFs.
     Calls run_postprocess_day for each day in [start_date, end_date].
     """
     # start_date = np.datetime64(start_date)
     # end_date   = np.datetime64(end_date)
-    # date_range = np.arange(start_date, end_date + np.timedelta64(1, "D"), dtype="datetime64[D]")
+    # date_range = np.arange(
+    # start_date, end_date + np.timedelta64(1, "D"),
+    # dtype="datetime64[D]")
     fmt = "%Y-%m-%d:%H"
 
     # Parse exact hour from input
@@ -293,17 +308,25 @@ if __name__ == "__main__":
         level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
-    parser = argparse.ArgumentParser(description="Convert GenCast outputs to CF-compliant NetCDFs")
-    parser.add_argument("--start_date", type=str, required=True, help="Start date (YYYY-MM-DD)")
-    parser.add_argument("--end_date",   type=str, required=True, help="End date (YYYY-MM-DD)")
-    parser.add_argument("--geos_dir",   type=str, required=True,
-                        help="Directory with GEOS inputs (for initial conditions)")
+    parser = argparse.ArgumentParser(
+        description="Convert GenCast outputs to CF-compliant NetCDFs")
+    parser.add_argument(
+        "--start_date", type=str, required=True,
+        help="Start date (YYYY-MM-DD:HH)")
+    parser.add_argument(
+        "--end_date",   type=str, required=True,
+        help="End date (YYYY-MM-DD:HH)")
+    parser.add_argument(
+        "--geos_dir", type=str, required=True,
+        help="Directory with GEOS inputs (for initial conditions)")
     parser.add_argument("--pred_dir",   type=str, required=True,
                         help="Directory with GenCast predictions")
-    parser.add_argument("--post_out_dir", type=str, default="./output/postprocess",
-                        help="Directory for CF-compliant NetCDF outputs")
-    parser.add_argument("--no_ens_mean", action="store_true",
-                        help="Disable ensemble mean (keep all ensemble members)")
+    parser.add_argument(
+        "--post_out_dir", type=str, default="./output/postprocess",
+        help="Directory for CF-compliant NetCDF outputs")
+    parser.add_argument(
+        "--no_ens_mean", action="store_true",
+        help="Disable ensemble mean (keep all ensemble members)")
 
     args = parser.parse_args()
 
