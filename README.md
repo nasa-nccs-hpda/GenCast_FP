@@ -19,25 +19,13 @@ Note that the following command can be run from any Discover login node.
 For a single day (end_date defaults to the same day):
 
 ```bash
-sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
-    --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
-    --wrap="module load singularity; singularity exec --nv \
-    -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
-    /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest \
-    gencast-fp run --start_date 2025-11-19:12 \
-    --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
+sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 --mem-per-gpu=100G -t 10:00:00 -J gencast-fp --wrap="module load singularity; singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest gencast-fp run --start_date 2025-11-19:12 --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
 ```
 
 if you want to run for multiple past days:
 
 ```bash
-sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
-    --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
-    --wrap="module load singularity; singularity exec --nv \
-    -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
-    /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest \
-    gencast-fp run --start_date 2025-11-10:00 --end_date 2025-11-15:00 \
-    --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
+sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 --mem-per-gpu=100G -t 10:00:00 -J gencast-fp --wrap="module load singularity; singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest gencast-fp run --start_date 2025-11-10:00 --end_date 2025-11-15:00 --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
 ```
 
 Example slurm file submission script:
@@ -79,14 +67,7 @@ Assuming you clone the sofware to Discover in the path `/discover/nobackup/myuse
 you would need to change your container argument to use the `--env` as:
 
 ```bash
-sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
-    --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
-    --wrap="module load singularity; singularity exec --nv \
-    -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
-    --env PYTHONPATH="/discover/nobackup/myusername/GenCast_FP" \
-    /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest \
-    gencast-fp run --start_date 2025-11-20:00 \
-    --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
+sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 --mem-per-gpu=100G -t 10:00:00 -J gencast-fp --wrap="module load singularity; singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm --env PYTHONPATH="/discover/nobackup/myusername/GenCast_FP" /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest gencast-fp run --start_date 2025-11-20:00 --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
 ```
 
 In the event where you get an error related to a Fortran library not
@@ -94,11 +75,7 @@ being available, you will need to run the following command to add the
 compiled Cython binary to your path where you are making your code modifications.
 
 ```bash
-singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
-  --env PYTHONPATH="/discover/nobackup/myusername/GenCast_FP" \
-  /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest \
-  cp /opt/GenCast_FP/gencast_fp/preprocess/eta2xprs_.cpython-310-x86_64-linux-gnu.so \
-  /discover/nobackup/myusername/GenCast_FP/gencast_fp/preprocess
+singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm --env PYTHONPATH="/discover/nobackup/myusername/GenCast_FP" /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest cp /opt/GenCast_FP/gencast_fp/preprocess/eta2xprs_.cpython-310-x86_64-linux-gnu.so /discover/nobackup/myusername/GenCast_FP/gencast_fp/preprocess
 ```
 
 ## Dependencies
