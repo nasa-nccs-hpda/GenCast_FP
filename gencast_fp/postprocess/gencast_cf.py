@@ -214,9 +214,12 @@ def run_postprocess_day(
     D = date.day
     H = date.hour
 
-    out_day = Path(
-        post_out_dir) / f"Y{Y:04d}" / f"M{M:02d}" / f"D{D:02d}"
+    # setup output directory
+    out_day = \
+        Path(post_out_dir) / f"Y{Y:04d}" / \
+        f"M{M:02d}" / f"D{D:02d}" / f"T{H:02d}"
 
+    # make output directory
     out_day.mkdir(parents=True, exist_ok=True)
 
     # Initial conditions (first two steps)
