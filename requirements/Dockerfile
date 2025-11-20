@@ -13,9 +13,23 @@ RUN pip install nvidia-cuda-runtime-cu12
 
 # --- micromamba (for esmpy/xesmf + compilers) ---
 ARG MAMBA_VERSION=1.5.8
-RUN curl -L "https://micro.mamba.pm/api/micromamba/linux-64/${MAMBA_VERSION}" -o /tmp/micromamba.tar.bz2 && \
-    tar -xvjf /tmp/micromamba.tar.bz2 -C /usr/local/bin bin/micromamba --strip-components=1 && \
+ARG TARGETPLATFORM
+
+# RUN curl -L "https://micro.mamba.pm/api/micromamba/linux-64/${MAMBA_VERSION}" -o /tmp/micromamba.tar.bz2 && \
+#    tar -xvjf /tmp/micromamba.tar.bz2 -C /usr/local/bin bin/micromamba --strip-components=1 && \
+#    rm /tmp/micromamba.tar.bz2
+
+RUN set -eux; \
+    case "${TARGETPLATFORM}" in \
+      "linux/amd64")   MAMBA_ARCH="linux-64" ;; \
+      "linux/arm64")   MAMBA_ARCH="linux-aarch64" ;; \
+      *) echo "Unsupported TARGETPLATFORM: ${TARGETPLATFORM}"; exit 1 ;; \
+    esac; \
+    curl -L "https://micro.mamba.pm/api/micromamba/${MAMBA_ARCH}/${MAMBA_VERSION}" \
+      -o /tmp/micromamba.tar.bz2; \
+    tar -xvjf /tmp/micromamba.tar.bz2 -C /usr/local/bin bin/micromamba --strip-components=1; \
     rm /tmp/micromamba.tar.bz2
+
 ENV MAMBA_ROOT_PREFIX=/opt/micromamba
 
 # Create env with things pip struggles with + compilers
