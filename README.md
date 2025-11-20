@@ -23,8 +23,8 @@ sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
     --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
     --wrap="module load singularity; singularity exec --nv \
     -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
-    /discover/nobackup/projects/QEFM/containers/gencast-fp-latest \
-    gencast-fp run --start_date 2025-11-20:00 \
+    /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest \
+    gencast-fp run --start_date 2025-11-19:12 \
     --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
 ```
 
@@ -35,7 +35,7 @@ sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
     --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
     --wrap="module load singularity; singularity exec --nv \
     -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
-    /discover/nobackup/projects/QEFM/containers/gencast-fp-latest \
+    /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest \
     gencast-fp run --start_date 2025-11-10:00 --end_date 2025-11-15:00 \
     --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
 ```
@@ -63,15 +63,52 @@ module load singularity
 # Run the container
 singularity exec --nv \
     -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
-    /discover/nobackup/projects/QEFM/containers/gencast-fp-latest \
+    /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest \
     gencast-fp run \
     --start_date 2025-11-20:00 \
     --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run
 ```
 
+## Making your own changes
+
+If you want to do additional development not available in the container package,
+we recommend for you to Fork this repository and point to the new changes as a
+PYTHONPATH variable inside the container.
+
+Assuming you clone the sofware to Discover in the path `/discover/nobackup/myusername/GenCast_FP`,
+you would need to change your container argument to use the `--env` as:
+
+```bash
+sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 \
+    --mem-per-gpu=100G -t 10:00:00 -J gencast-fp \
+    --wrap="module load singularity; singularity exec --nv \
+    -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
+    --env PYTHONPATH="/discover/nobackup/myusername/GenCast_FP" \
+    /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest \
+    gencast-fp run --start_date 2025-11-20:00 \
+    --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
+```
+
+In the event where you get an error related to a Fortran library not
+being available, you will need to run the following command to add the
+compiled Cython binary to your path where you are making your code modifications.
+
+```bash
+singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm \
+  --env PYTHONPATH="/discover/nobackup/myusername/GenCast_FP" \
+  /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest \
+  cp /opt/GenCast_FP/gencast_fp/preprocess/eta2xprs_.cpython-310-x86_64-linux-gnu.so \
+  /discover/nobackup/myusername/GenCast_FP/gencast_fp/preprocess
+```
+
 ## Dependencies
 
 Additional details and flexibility of the commands are listed below.
+A container has been made available here:
+
+```bash
+/discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest
+```
 
 ### Downloading the Container
 
@@ -88,25 +125,24 @@ singularity build --sandbox gencast-fp-latest docker://nasanccs/gencast-fp:lates
 #### Specific Version
 
 ```bash
-singularity build --sandbox gencast-fp-0.1.0 docker://nasanccs/gencast-fp:0.1.0
+singularity build --sandbox gencast-fp-0.2.0 docker://nasanccs/gencast-fp:0.2.0
 ```
 
 A version of this container is located at:
 
 ```bash
-/discover/nobackup/projects/QEFM/containers/gencast-fp-latest
+/discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest
 ```
 
 ## Pipeline Details
 
 In addition, individual steps of the pipeline can be run using the container and CLI. Some examples with arguments
-are listed below. The pipeline has 3 steps: preprocess, predict, and postprocess.
+are listed below. The pipeline has 3 steps: preprocess, predict, and postprocess. While we advice
+to run the full pipeline, sometimes is easier to develop in stages.
 
 ### Preprocessing
 
 ```bash
-singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-latest_jordan gencast-fp preprocess -h
-WARNING: underlay of /usr/bin/nvidia-smi required more than 50 (225) bind mounts
 usage: gencast_fp_cli.py preprocess [-h] --start_date START_DATE --end_date END_DATE [--output_dir OUTPUT_DIR] [--expid EXPID] [--res_value RES_VALUE] [--nsteps NSTEPS]
 
 options:
@@ -125,7 +161,6 @@ options:
 ### Prediction
 
 ```bash
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py predict -h
 usage: gencast_fp_cli.py predict [-h] --start_date START_DATE --end_date END_DATE --input_dir INPUT_DIR --output_dir OUTPUT_DIR [--ckpt CKPT] [--nsteps NSTEPS] [--res RES] [--ensemble ENSEMBLE]
                                  [--container_meta CONTAINER_META]
 
@@ -149,7 +184,6 @@ options:
 ### Postprocessing
 
 ```bash
-singularity exec --env PYTHONPATH=/discover/nobackup/jacaraba/development/GenCast_FP --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-latest python /discover/nobackup/jacaraba/development/GenCast_FP/gencast_fp/view/gencast_fp_cli.py postprocess -h
 usage: gencast_fp_cli.py postprocess [-h] --start_date START_DATE --end_date END_DATE --input_dir INPUT_DIR --predictions_dir PREDICTIONS_DIR [--output_dir OUTPUT_DIR] [--no_ens_mean]
 
 options:
