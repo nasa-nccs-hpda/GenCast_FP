@@ -57,9 +57,9 @@ ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
 # --- Clone your repo and compile the Fortran extension ---
 ARG REPO_URL="https://github.com/nasa-nccs-hpda/GenCast_FP.git"
-ARG REPO_REF="main"
+ARG GenCastFP_TAG="main"
 WORKDIR /opt/GenCast_FP
-RUN git clone --depth 1 --branch ${REPO_REF} ${REPO_URL} /opt/GenCast_FP
+RUN git clone --depth 1 --branch ${GenCastFP_TAG} ${REPO_URL} /opt/GenCast_FP
 
 WORKDIR /opt/GenCast_FP/gencast_fp/preprocess
 RUN python -c "import numpy as _; print('NumPy:', _.__version__)" && \
