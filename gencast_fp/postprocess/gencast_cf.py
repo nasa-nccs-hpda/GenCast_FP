@@ -61,7 +61,8 @@ def proc_time_step(
             ds_org, ctime, ref_date,
             output_dir: Path, case="init", ens_mean=True
         ):
-
+    
+    GRAV = 9.80665
     FILL_VALUE = np.float32(1.0e15)
 
     ds = ds_org.sel(time=ctime).expand_dims("time")
@@ -161,6 +162,9 @@ def proc_time_step(
                 "missing_value": FILL_VALUE,
                 "fmissing_value": FILL_VALUE,
             }
+    
+    # --- geopotential to height ---
+    ds['H'] = ds['H']/GRAV
 
     # --- globals ---
     ds.attrs = {
