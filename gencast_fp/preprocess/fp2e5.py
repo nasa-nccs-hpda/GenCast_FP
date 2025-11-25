@@ -91,6 +91,8 @@ def get_sst(sst_file: str, current_date: pd.Timestamp):
     )
     return ds
 
+def get_sst_era5(sst_file: str, current_date: pd.Timestamp):
+    return None
 
 def expand_dims(ds, steps):
     # Expand the time dimension of the dataset
