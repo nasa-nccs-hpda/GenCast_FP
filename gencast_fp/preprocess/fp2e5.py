@@ -97,7 +97,10 @@ def get_sst_era5(sst_file: str):
     
     # Read the SST data from the ERA5 file and revert latitudes 
     ds = xr.open_dataset(sst_file, engine="netcdf4")['sst'] \
-        .isel(latitude=slice(None, None, -1)).squeeze(drop=True) 
+        .isel(latitude=slice(None, None, -1))
+    
+    # Drop unnecessary coordinates
+    ds = ds.drop_vars(['expver', 'number'])
     
     # Reduce resolution by factor of 4 (0p25 degree to 1 degree)
     ds = ds.isel(latitude=slice(None, None, 4), longitude=slice(None, None, 4))
