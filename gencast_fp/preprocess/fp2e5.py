@@ -91,6 +91,24 @@ def get_sst(sst_file: str, current_date: pd.Timestamp):
     )
     return ds
 
+def get_sst_era5(sst_file: str):
+    if not os.path.exists(sst_file):
+        raise FileNotFoundError(f"SST file {sst_file} not found.")
+    
+    # Read the SST data from the ERA5 file and revert latitudes 
+    ds = xr.open_dataset(sst_file, engine="netcdf4")['sst'] \
+        .isel(latitude=slice(None, None, -1))
+    
+    # Drop unnecessary coordinates
+    ds = ds.drop_vars(['expver', 'number'])
+    
+    # Reduce resolution by factor of 4 (0p25 degree to 1 degree)
+    ds = ds.isel(latitude=slice(None, None, 4), longitude=slice(None, None, 4))
+
+    # Rename time coordinate
+    ds = ds.rename({'valid_time': 'time'})
+    
+    return ds
 
 def expand_dims(ds, steps):
     # Expand the time dimension of the dataset
@@ -186,13 +204,6 @@ def to_gencast_input(ds):
     # change time coordinate to timedelta
     # ds["time"] = ds["time"] - ds["time"].isel(time=0)
 
-    # # add land_sea_mask
-    # file = f"/discover/nobackup/projects/QEFM/data/FMGenCast/12hr/Y2024/gencast-dataset-source-era5_date-{date_str}_res-1.0_levels-13_steps-20.nc"
-    # ds_lsm = xr.open_dataset(file)
-    # ds['land_sea_mask'] = ds_lsm['land_sea_mask']
-    # # using the sea_surface_temperature from the original dataset
-    # ds['sea_surface_temperature'] = ds_lsm['sea_surface_temperature']
-
     # drop the time dimension for geopotential_at_surface
     ds["geopotential_at_surface"] = (
         ds["geopotential_at_surface"].isel(time=0).drop_vars(["time"])
@@ -208,7 +219,8 @@ def run_preprocess(
             outdir: str,
             expid: str,
             res_value: float = 1.0,  # 1.0 resolution
-            nsteps: int = 30  # 15 day rollout
+            nsteps: int = 30,  # 15 day rollout
+            era5_sst: bool = False, # if True, use ERA5 SST instead of OSTIA
         ):
 
     os.makedirs(outdir, exist_ok=True)
@@ -254,14 +266,18 @@ def run_preprocess(
 
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
 
-            # get the sst
-            sst_ds = get_sst(Files["sst"], dt)
+            if era5_sst:
+                # Get the SST from ERA5
+                ai_Ex['sst'] = get_sst_era5(Files["e5_Ex"])
+            else:
+                # get the sst from OSTIA-Reynolds
+                sst_ds = get_sst(Files["sst"], dt)
 
-            if not sst_regridder:
-                sst_grid = sst_dataset(
-                    "OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
-                sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
-            ai_Ex['sst'] = sst_regridder(sst_ds['sst'], keep_attrs=True)
+                if not sst_regridder:
+                    sst_grid = sst_dataset(
+                        "OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
+                    sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
+                ai_Ex['sst'] = sst_regridder(sst_ds['sst'], keep_attrs=True)
 
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
@@ -273,10 +289,11 @@ def run_preprocess(
         # add the lsm
         lsm = get_era5_lsm(Files["e5_Es"])
 
-        # apply lsm to sst
-        lsm_nan = xr.where(lsm == 0, 1.0, np.nan)
-        ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
-        ai_Ex_day['sst'] = ai_Ex_day['sst'].where(ai_Ex_day['sst'] >= 271.35)
+        # apply lsm to sst, only apply for OSTIA case
+        if not era5_sst:    
+            lsm_nan = xr.where(lsm == 0, 1.0, np.nan)
+            ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
+            ai_Ex_day['sst'] = ai_Ex_day['sst'].where(ai_Ex_day['sst'] >= 271.35)
 
         # merge into single dataset for the day
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
@@ -332,6 +349,12 @@ def main():
         default=30,
         help="Number of steps for rollout (default 30, 15 days)",
     )
+    parser.add_argument(
+        "--era5_sst",
+        type=bool,
+        default=False,
+        help="If True, use ERA5 SST instead of OSTIA-Reynolds",
+    )
 
     args = parser.parse_args()
 
@@ -342,7 +365,8 @@ def main():
         args.outdir,
         args.expid,
         args.res_value,
-        args.nsteps
+        args.nsteps,
+        args.era5_sst,
     )
 
     return

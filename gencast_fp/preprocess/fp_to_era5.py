@@ -211,9 +211,11 @@ def discover_files(time, outdir='./', expid='f5295'):
     t, x = time, expid
     sst_dir = '/gpfsm/dnb07/projects/p10/gmao_ops/fvInput/g5gcm/bcs/realtime/OSTIA_REYNOLDS/2880x1440/'
     e5_dirn = '/css/era5/static/'
+    e5_dir2 = '/css/era5/surface_hourly/inst/Y%y4/M%m2/'
     fp_dirn = '/gpfsm/dnb06/projects/p174/%expid_fp/diag/Y%y4/M%m2/'
 
     F1 = dict(e5_Es = (e5_dirn+'era5_static-allvar.nc'),
+              e5_Ex = _gat2s(e5_dir2+'era5_surface-inst_allvar_%y4%m2%d2_%h2z.nc',t,x),
               sst = _gat2s(sst_dir+'dataoceanfile_OSTIA_REYNOLDS_SST.2880x1440.%y4.data',t,x),
               fp_Nv = _gat2s(fp_dirn+'%expid_fp.inst3_3d_asm_Nv.%y4%m2%d2_%h2%n2z.nc4',t,x),
               fp_Nx = _gat2s(fp_dirn+'%expid_fp.inst3_2d_asm_Nx.%y4%m2%d2_%h2%n2z.nc4',t,x),
