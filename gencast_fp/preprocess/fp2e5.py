@@ -246,6 +246,12 @@ def run_preprocess(
             logging.info(dt)
             Files = discover_files(dt, outdir=outdir, expid=expid)
             logging.info(Files)
+            
+            # get sst from ERA5
+            print(Files["e5_Ex"])
+            sst_ds = get_sst_era5(Files["e5_Ex"])
+            print(sst_ds)
+            exit()
 
             # Process the GEOS-FP first
             fp_Nx = xr.open_dataset(Files["fp_Nx"], engine="netcdf4")
@@ -262,11 +268,7 @@ def run_preprocess(
 
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
 
-            # get sst from ERA5
-            sst_ds = get_sst_era5(Files["e5_Ex"])
-            print(sst_ds)
-            exit()
-            
+
             # get the sst
             sst_ds = get_sst(Files["sst"], dt)
 
