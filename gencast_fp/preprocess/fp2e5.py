@@ -219,7 +219,8 @@ def run_preprocess(
             outdir: str,
             expid: str,
             res_value: float = 1.0,  # 1.0 resolution
-            nsteps: int = 30  # 15 day rollout
+            nsteps: int = 30,  # 15 day rollout
+            era5_sst: bool = False, # if True, use ERA5 SST instead of OSTIA
         ):
 
     os.makedirs(outdir, exist_ok=True)
@@ -249,12 +250,6 @@ def run_preprocess(
             logging.info(dt)
             Files = discover_files(dt, outdir=outdir, expid=expid)
             logging.info(Files)
-            
-            # get sst from ERA5
-            print(Files["e5_Ex"])
-            sst_ds = get_sst_era5(Files["e5_Ex"])
-            print(sst_ds)
-            exit()
 
             # Process the GEOS-FP first
             fp_Nx = xr.open_dataset(Files["fp_Nx"], engine="netcdf4")
@@ -271,15 +266,18 @@ def run_preprocess(
 
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
 
+            if era5_sst:
+                # Get the SST from ERA5
+                ai_Ex['sst'] = get_sst_era5(Files["e5_Ex"])
+            else:
+                # get the sst from OSTIA-Reynolds
+                sst_ds = get_sst(Files["sst"], dt)
 
-            # get the sst
-            sst_ds = get_sst(Files["sst"], dt)
-
-            if not sst_regridder:
-                sst_grid = sst_dataset(
-                    "OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
-                sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
-            ai_Ex['sst'] = sst_regridder(sst_ds['sst'], keep_attrs=True)
+                if not sst_regridder:
+                    sst_grid = sst_dataset(
+                        "OSTIA-REYNOLDS on ERA-5 Grid for AI/ML Modeling")
+                    sst_regridder = xe.Regridder(sst_grid, ai_Ex, "conservative")
+                ai_Ex['sst'] = sst_regridder(sst_ds['sst'], keep_attrs=True)
 
             daily_Ex.append(ai_Ex)
             daily_Ep.append(ai_Ep)
@@ -291,10 +289,11 @@ def run_preprocess(
         # add the lsm
         lsm = get_era5_lsm(Files["e5_Es"])
 
-        # apply lsm to sst
-        lsm_nan = xr.where(lsm == 0, 1.0, np.nan)
-        ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
-        ai_Ex_day['sst'] = ai_Ex_day['sst'].where(ai_Ex_day['sst'] >= 271.35)
+        # apply lsm to sst, only apply for OSTIA case
+        if not era5_sst:    
+            lsm_nan = xr.where(lsm == 0, 1.0, np.nan)
+            ai_Ex_day['sst'] = ai_Ex_day['sst'] * lsm_nan
+            ai_Ex_day['sst'] = ai_Ex_day['sst'].where(ai_Ex_day['sst'] >= 271.35)
 
         # merge into single dataset for the day
         ai_day = xr.merge([ai_Ex_day, ai_Ep_day, lsm.to_dataset()])
@@ -349,6 +348,12 @@ def main():
         type=int,
         default=30,
         help="Number of steps for rollout (default 30, 15 days)",
+    )
+    parser.add_argument(
+        "--era5_sst",
+        type=bool,
+        default=False,
+        help="If True, use ERA5 SST instead of OSTIA-Reynolds",
     )
 
     args = parser.parse_args()
