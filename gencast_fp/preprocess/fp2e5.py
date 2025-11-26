@@ -365,7 +365,8 @@ def main():
         args.outdir,
         args.expid,
         args.res_value,
-        args.nsteps
+        args.nsteps,
+        args.era5_sst,
     )
 
     return
