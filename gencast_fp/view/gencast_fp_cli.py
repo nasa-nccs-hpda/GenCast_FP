@@ -51,6 +51,12 @@ def main():
         default=30,
         help="Number of steps for rollout (default 30, 15 days)",
     )
+    preprocess_args.add_argument(
+        "--era5_sst",
+        type=bool,
+        default=False,
+        help="If True, use ERA5 SST instead of OSTIA-Reynolds",
+    )
 
     # ---------- predict ----------
     predict_args = sub.add_parser("predict", help="Run prediction only")
@@ -114,6 +120,12 @@ def main():
     run_args.add_argument(
         "--expid", type=str, default="f5295",
         help="Experiment ID used during preprocessing")
+    run_args.add_argument(
+        "--era5_sst",
+        type=bool,
+        default=False,
+        help="If True, use ERA5 SST instead of OSTIA-Reynolds",
+    )
 
     run_args.add_argument(
         "--ckpt", type=str, default=None,
@@ -155,7 +167,8 @@ def main():
             args.output_dir,
             args.expid,
             args.res_value,
-            args.nsteps
+            args.nsteps,
+            args.era5_sst
         )
 
     elif args.cmd == "predict":
@@ -217,6 +230,7 @@ def main():
                 args.expid,
                 args.res_value,
                 args.nsteps,
+                args.era5_sst
             )
         else:
             logging.info("[1/3] Skipping preprocess")
