@@ -91,8 +91,21 @@ def get_sst(sst_file: str, current_date: pd.Timestamp):
     )
     return ds
 
-def get_sst_era5(sst_file: str, current_date: pd.Timestamp):
-    return None
+def get_sst_era5(sst_file: str):
+    if not os.path.exists(sst_file):
+        raise FileNotFoundError(f"SST file {sst_file} not found.")
+    
+    # Read the SST data from the ERA5 file and revert latitudes 
+    ds = xr.open_dataset(sst_file, engine="netcdf4")['sst'] \
+        .isel(latitude=slice(None, None, -1)).squeeze(drop=True) 
+    
+    # Reduce resolution by factor of 4 (0p25 degree to 1 degree)
+    ds = ds.isel(latitude=slice(None, None, 4), longitude=slice(None, None, 4))
+
+    # Rename time coordinate
+    ds = ds.rename({'valid_time': 'time'})
+    
+    return ds
 
 def expand_dims(ds, steps):
     # Expand the time dimension of the dataset
@@ -249,6 +262,11 @@ def run_preprocess(
 
             ai_Ex, ai_Ep = fp_to_era5_hgrid(ai_Nx, ai_Np, regridder=regridder)
 
+            # get sst from ERA5
+            sst_ds = get_sst_era5(Files["e5_Ex"])
+            print(sst_ds)
+            exit()
+            
             # get the sst
             sst_ds = get_sst(Files["sst"], dt)
 
