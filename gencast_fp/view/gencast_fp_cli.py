@@ -240,7 +240,7 @@ def main():
         if not args.skip_predict:
             logging.info(f"[2/3] Prediction → {prediction_output_dir}")
             if args.ckpt:
-                ckpt_and_stats = load_ckpt_files(args.ckpt)
+                ckpt_and_stats = load_ckpt_files(args.container_meta, ckpt_path=args.ckpt)
                 #ckpt_and_stats = {"ckpt": args.ckpt}
             else:
                 ckpt_and_stats = load_ckpt_files(args.container_meta)
