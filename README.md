@@ -25,7 +25,7 @@ sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 --mem-per
 if you want to run for multiple past days:
 
 ```bash
-sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 --mem-per-gpu=100G -t 10:00:00 -J gencast-fp --wrap="module load singularity; singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest gencast-fp run --start_date 2025-11-10:00 --end_date 2025-11-15:00 --output_dir /discover/nobackup/jacaraba/development/GenCast_FP/tests/gencast-run"
+sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 --mem-per-gpu=100G -t 10:00:00 -J gencast-fp --wrap="module load singularity; singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest gencast-fp run --start_date 2025-11-10:00 --end_date 2025-11-15:00 --output_dir <YOUR_OUTDIR>"
 ```
 
 Example slurm file submission script:
