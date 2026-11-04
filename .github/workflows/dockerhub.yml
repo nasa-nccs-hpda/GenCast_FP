@@ -65,8 +65,67 @@ jobs:
           build-args: |
             GenCastFP_TAG=${{ env.GenCastFP_TAG }}
 
+  docker-arm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Prune docker images and swap
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt clean
+          docker image prune -a -f
+          df -h
+
+      - name: Set build versions
+        id: set_versions
+        env:
+          DEP_REPO: nasa-nccs-hpda/GenCast_FP
+        run: |
+          DEP_TAG=$(curl -s https://api.github.com/repos/${DEP_REPO}/releases/latest | jq -r .tag_name)
+          echo "GenCastFP_TAG=$DEP_TAG" >> $GITHUB_ENV
+          echo "VERSION_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "Using ${DEP_REPO} release tag: $DEP_TAG"
+          echo "Workflow release version: ${GITHUB_REF#refs/tags/}"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          file: ./requirements/Dockerfile
+          push: true
+          tags: nasanccs/gencast-fp:${{ env.GenCastFP_TAG }}-arm64
+          build-args: |
+            GenCastFP_TAG=${{ env.GenCastFP_TAG }}
+
   manifest:
-    needs: [docker-amd]
+    needs: [docker-amd, docker-arm]
     runs-on: ubuntu-latest
     steps:
       - name: Login to Docker Hub
@@ -86,20 +145,25 @@ jobs:
           echo "Using ${DEP_REPO} release tag: $DEP_TAG"
           echo "Workflow release version: ${GITHUB_REF#refs/tags/}"
 
-      - name: Extract amd64 digest
+      - name: Extract per-platform digests
         run: |
           AMD_DIGEST=$(docker buildx imagetools inspect nasanccs/gencast-fp:${{ env.GenCastFP_TAG }}-amd64 \
             --format '{{range .Manifest.Manifests}}{{if eq .Platform.Architecture "amd64"}}{{.Digest}}{{end}}{{end}}')
+          ARM_DIGEST=$(docker buildx imagetools inspect nasanccs/gencast-fp:${{ env.GenCastFP_TAG }}-arm64 \
+            --format '{{range .Manifest.Manifests}}{{if eq .Platform.Architecture "arm64"}}{{.Digest}}{{end}}{{end}}')
           echo "AMD_DIGEST=$AMD_DIGEST" >> $GITHUB_ENV
+          echo "ARM_DIGEST=$ARM_DIGEST" >> $GITHUB_ENV
 
       - name: Create and push manifest
         run: |
-          # latest -> amd64 only
+          # latest -> amd64 and arm64
           docker manifest create nasanccs/gencast-fp:latest \
-            nasanccs/gencast-fp@${AMD_DIGEST}
+            nasanccs/gencast-fp@${AMD_DIGEST} \
+            nasanccs/gencast-fp@${ARM_DIGEST}
           docker manifest push nasanccs/gencast-fp:latest
 
-          # version tag -> amd64 only
+          # version tag -> amd64 and arm64
           docker manifest create nasanccs/gencast-fp:${{ env.GenCastFP_TAG }} \
-            nasanccs/gencast-fp@${AMD_DIGEST}
+            nasanccs/gencast-fp@${AMD_DIGEST} \
+            nasanccs/gencast-fp@${ARM_DIGEST}
           docker manifest push nasanccs/gencast-fp:${{ env.GenCastFP_TAG }}
