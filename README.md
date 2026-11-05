@@ -82,6 +82,12 @@ singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm --env PYTHO
 
 The container uses Python 3.12 on Debian Bookworm for both AMD64 and ARM64.
 The Fortran extension is compiled with NumPy F2PY and Meson inside the micromamba environment.
+Direct pip dependencies are declared in `requirements/runtime.txt`, including the
+`h5netcdf[h5py]` backend needed for prediction's file-object reads. ESMF/xESMF and
+MPI are installed through conda-forge in the Dockerfile. Image builds run
+`pip check`, application imports, NetCDF round trips, a small regridding operation,
+and a JAX CPU calculation before downloading model weights. Installed pip versions
+are recorded inside each image at `/opt/gencast-runtime-versions.txt`.
 
 Additional details and flexibility of the commands are listed below.
 A container has been made available here:

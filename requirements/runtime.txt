@@ -1,0 +1,14 @@
+# Direct application dependencies and the optional backends used at runtime.
+# ESMF/xESMF and MPI are installed by micromamba in the Dockerfile.
+# GraphCast and its dependencies are installed from the bundled source.
+numpy
+pandas
+xarray
+dask[array]
+dm-haiku
+jax[cuda12]
+netCDF4
+h5netcdf[h5py]
+IPython
+huggingface_hub
+hf_transfer
