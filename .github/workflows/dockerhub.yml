@@ -3,20 +3,56 @@ name: CI to Dockerhub - Multi-arch
 on:
   release:
     types: [published]  # Trigger only when a release is created
-  workflow_dispatch: # Keep only manual trigger
+  workflow_dispatch: # Build the branch selected in the Run workflow menu
 
-# Temporary branch build override; restore release lookup after testing.
-env:
-  GenCastFP_TAG: "0.4.0"
+permissions:
+  contents: read
 
 jobs:
+  build-version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      source: ${{ steps.version.outputs.source }}
+      ref: ${{ steps.version.outputs.ref }}
+    steps:
+      - name: Resolve build source and image tag
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          SELECTED_REF: ${{ github.ref }}
+          SELECTED_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ -n "$RELEASE_TAG" ]; then
+            source="$RELEASE_TAG"
+            ref="refs/tags/$RELEASE_TAG"
+            tag="$RELEASE_TAG"
+          else
+            source="$SELECTED_NAME"
+            ref="$SELECTED_REF"
+            # Docker tags cannot contain slashes or other branch-name punctuation.
+            tag="branch-$(printf '%s' "$source" | sed 's/[^a-zA-Z0-9_.-]/-/g' | cut -c1-115)"
+          fi
+          if [[ ! "$tag" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,121}$ ]]; then
+            echo "Invalid Docker image tag: $tag" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "source=$source" >> "$GITHUB_OUTPUT"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Building $ref as $tag"
+
   docker-amd:
+    needs: [build-version]
+    env:
+      GenCastFP_TAG: ${{ needs.build-version.outputs.tag }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: refs/heads/${{ env.GenCastFP_TAG }}
+          ref: ${{ needs.build-version.outputs.ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -59,15 +95,18 @@ jobs:
           push: true
           tags: nasanccs/gencast-fp:${{ env.GenCastFP_TAG }}-amd64
           build-args: |
-            GenCastFP_TAG=${{ env.GenCastFP_TAG }}
+            GenCastFP_TAG=${{ needs.build-version.outputs.source }}
 
   docker-arm:
+    needs: [build-version]
+    env:
+      GenCastFP_TAG: ${{ needs.build-version.outputs.tag }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: refs/heads/${{ env.GenCastFP_TAG }}
+          ref: ${{ needs.build-version.outputs.ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -110,10 +149,12 @@ jobs:
           push: true
           tags: nasanccs/gencast-fp:${{ env.GenCastFP_TAG }}-arm64
           build-args: |
-            GenCastFP_TAG=${{ env.GenCastFP_TAG }}
+            GenCastFP_TAG=${{ needs.build-version.outputs.source }}
 
   manifest:
-    needs: [docker-amd, docker-arm]
+    needs: [build-version, docker-amd, docker-arm]
+    env:
+      GenCastFP_TAG: ${{ needs.build-version.outputs.tag }}
     runs-on: ubuntu-latest
     steps:
       - name: Login to Docker Hub
