@@ -221,6 +221,10 @@ def run_preprocess(
             res_value: float = 1.0,  # 1.0 resolution
             nsteps: int = 30,  # 15 day rollout
             era5_sst: bool = False, # if True, use ERA5 SST instead of OSTIA
+            sst_dir: str = None,  # override default OSTIA-Reynolds SST dir
+            fp_dirn: str = None,  # override default GEOS-FP diag dir
+            e5_dirn: str = None,  # override default ERA5 static dir
+            e5_dir2: str = None,  # override default ERA5 surface_hourly dir
         ):
 
     os.makedirs(outdir, exist_ok=True)
@@ -248,7 +252,11 @@ def run_preprocess(
         daily_Ep = []
         for dt in time_tuple:
             logging.info(dt)
-            Files = discover_files(dt, outdir=outdir, expid=expid)
+            Files = discover_files(
+                dt, outdir=outdir, expid=expid,
+                sst_dir=sst_dir, fp_dirn=fp_dirn,
+                e5_dirn=e5_dirn, e5_dir2=e5_dir2,
+            )
             logging.info(Files)
 
             # Process the GEOS-FP first
@@ -355,6 +363,34 @@ def main():
         default=False,
         help="If True, use ERA5 SST instead of OSTIA-Reynolds",
     )
+    parser.add_argument(
+        "--sst_dir",
+        type=str,
+        default=None,
+        help="Local directory containing OSTIA-Reynolds SST files "
+             "(overrides built-in discover default)",
+    )
+    parser.add_argument(
+        "--fp_dirn",
+        type=str,
+        default=None,
+        help="Local directory containing GEOS-FP diag files "
+             "(overrides built-in discover default)",
+    )
+    parser.add_argument(
+        "--e5_dirn",
+        type=str,
+        default=None,
+        help="Local directory containing ERA5 static files "
+             "(overrides built-in discover default)",
+    )
+    parser.add_argument(
+        "--e5_dir2",
+        type=str,
+        default=None,
+        help="Local directory containing ERA5 surface_hourly files "
+             "(overrides built-in discover default)",
+    )
 
     args = parser.parse_args()
 
@@ -367,6 +403,10 @@ def main():
         args.res_value,
         args.nsteps,
         args.era5_sst,
+        args.sst_dir,
+        args.fp_dirn,
+        args.e5_dirn,
+        args.e5_dir2,
     )
 
     return

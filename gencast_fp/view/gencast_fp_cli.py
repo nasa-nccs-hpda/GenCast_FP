@@ -57,6 +57,22 @@ def main():
         default=False,
         help="If True, use ERA5 SST instead of OSTIA-Reynolds",
     )
+    preprocess_args.add_argument(
+        "--sst_dir", type=str, default=None,
+        help="Local directory containing OSTIA-Reynolds SST files "
+             "(overrides built-in discover default)")
+    preprocess_args.add_argument(
+        "--fp_dirn", type=str, default=None,
+        help="Local directory containing GEOS-FP diag files "
+             "(overrides built-in discover default)")
+    preprocess_args.add_argument(
+        "--e5_dirn", type=str, default=None,
+        help="Local directory containing ERA5 static files "
+             "(overrides built-in discover default)")
+    preprocess_args.add_argument(
+        "--e5_dir2", type=str, default=None,
+        help="Local directory containing ERA5 surface_hourly files "
+             "(overrides built-in discover default)")
 
     # ---------- predict ----------
     predict_args = sub.add_parser("predict", help="Run prediction only")
@@ -126,6 +142,22 @@ def main():
         default=False,
         help="If True, use ERA5 SST instead of OSTIA-Reynolds",
     )
+    run_args.add_argument(
+        "--sst_dir", type=str, default=None,
+        help="Local directory containing OSTIA-Reynolds SST files "
+             "(overrides built-in discover default)")
+    run_args.add_argument(
+        "--fp_dirn", type=str, default=None,
+        help="Local directory containing GEOS-FP diag files "
+             "(overrides built-in discover default)")
+    run_args.add_argument(
+        "--e5_dirn", type=str, default=None,
+        help="Local directory containing ERA5 static files "
+             "(overrides built-in discover default)")
+    run_args.add_argument(
+        "--e5_dir2", type=str, default=None,
+        help="Local directory containing ERA5 surface_hourly files "
+             "(overrides built-in discover default)")
 
     run_args.add_argument(
         "--ckpt", type=str, default=None,
@@ -168,7 +200,11 @@ def main():
             args.expid,
             args.res_value,
             args.nsteps,
-            args.era5_sst
+            args.era5_sst,
+            args.sst_dir,
+            args.fp_dirn,
+            args.e5_dirn,
+            args.e5_dir2,
         )
 
     elif args.cmd == "predict":
@@ -231,7 +267,11 @@ def main():
                 args.expid,
                 args.res_value,
                 args.nsteps,
-                args.era5_sst
+                args.era5_sst,
+                args.sst_dir,
+                args.fp_dirn,
+                args.e5_dirn,
+                args.e5_dir2,
             )
         else:
             logging.info("[1/3] Skipping preprocess")
