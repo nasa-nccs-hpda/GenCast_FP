@@ -48,8 +48,14 @@ ENV LD_LIBRARY_PATH=/opt/micromamba/envs/esmf/lib
 RUN python -c "import sys; print('Using Python:', sys.executable)"
 RUN python -m pip install --no-cache-dir --upgrade numpy
 
-# GraphCast / JAX / IO deps
-RUN python -m pip install --no-cache-dir https://github.com/deepmind/graphcast/archive/master.zip
+# Clone the selected source before installing its bundled GraphCast package.
+ARG REPO_URL="https://github.com/nasa-nccs-hpda/GenCast_FP.git"
+ARG GenCastFP_TAG="main"
+WORKDIR /opt/GenCast_FP
+RUN git clone --depth 1 --branch ${GenCastFP_TAG} ${REPO_URL} /opt/GenCast_FP
+
+# Upstream master now installs WeatherNext rather than the graphcast namespace.
+RUN python -m pip install --no-cache-dir ./gencast_fp/prediction/FMGenCast/graphcast
 RUN python -m pip install --no-cache-dir --upgrade "jax[cuda12]"
 RUN python -m pip install --no-cache-dir --upgrade xarray netCDF4 h5netcdf IPython
 
@@ -57,12 +63,7 @@ RUN python -m pip install --no-cache-dir --upgrade xarray netCDF4 h5netcdf IPyth
 RUN python -m pip install --no-cache-dir --upgrade huggingface_hub hf_transfer
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
-# --- Clone your repo and compile the Fortran extension ---
-ARG REPO_URL="https://github.com/nasa-nccs-hpda/GenCast_FP.git"
-ARG GenCastFP_TAG="main"
-WORKDIR /opt/GenCast_FP
-RUN git clone --depth 1 --branch ${GenCastFP_TAG} ${REPO_URL} /opt/GenCast_FP
-
+# --- Compile the Fortran extension ---
 WORKDIR /opt/GenCast_FP/gencast_fp/preprocess
 RUN python -c "import numpy as _; print('NumPy:', _.__version__)" && \
     /usr/local/bin/micromamba run -n esmf \
@@ -85,6 +86,10 @@ assert result.shape == (2, 2, 2)
 np.testing.assert_allclose(result, 7.0)
 print("Built extension OK:", m.__name__)
 PY
+
+# Check prediction imports and CLI startup before downloading model weights.
+# Build runners do not need an NVIDIA GPU for this check.
+RUN JAX_PLATFORMS=cpu python /opt/GenCast_FP/gencast_fp/view/gencast_fp_cli.py --help
 
 # --- Pull only the `gencast/` folder from qefm-core ---
 ARG HF_QEFM_REPO="nasa-cisto-data-science-group/qefm-core"
