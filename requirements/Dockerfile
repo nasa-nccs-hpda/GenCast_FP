@@ -46,7 +46,6 @@ ENV LD_LIBRARY_PATH=/opt/micromamba/envs/esmf/lib
 
 # --- Python deps (inside the esmf env’s Python) ---
 RUN python -c "import sys; print('Using Python:', sys.executable)"
-RUN python -m pip install --no-cache-dir --upgrade numpy
 
 # Clone the selected source before installing its bundled GraphCast package.
 ARG REPO_URL="https://github.com/nasa-nccs-hpda/GenCast_FP.git"
@@ -55,12 +54,13 @@ WORKDIR /opt/GenCast_FP
 RUN git clone --depth 1 --branch ${GenCastFP_TAG} ${REPO_URL} /opt/GenCast_FP
 
 # Upstream master now installs WeatherNext rather than the graphcast namespace.
-RUN python -m pip install --no-cache-dir ./gencast_fp/prediction/FMGenCast/graphcast
-RUN python -m pip install --no-cache-dir --upgrade "jax[cuda12]"
-RUN python -m pip install --no-cache-dir --upgrade xarray netCDF4 h5netcdf IPython
+COPY requirements/runtime.txt /tmp/gencast-runtime.txt
+RUN python -m pip install --no-cache-dir --upgrade \
+      ./gencast_fp/prediction/FMGenCast/graphcast -r /tmp/gencast-runtime.txt && \
+    python -m pip check && \
+    python -m pip freeze > /opt/gencast-runtime-versions.txt
 
 # --- Hugging Face client (for subdir download) ---
-RUN python -m pip install --no-cache-dir --upgrade huggingface_hub hf_transfer
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
 # --- Compile the Fortran extension ---
@@ -89,6 +89,9 @@ PY
 
 # Check prediction imports and CLI startup before downloading model weights.
 # Build runners do not need an NVIDIA GPU for this check.
+COPY requirements/check_runtime.py /opt/check_gencast_runtime.py
+RUN JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
+    python /opt/check_gencast_runtime.py
 RUN JAX_PLATFORMS=cpu python /opt/GenCast_FP/gencast_fp/view/gencast_fp_cli.py --help
 
 # --- Pull only the `gencast/` folder from qefm-core ---
