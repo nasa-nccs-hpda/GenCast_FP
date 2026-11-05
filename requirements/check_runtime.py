@@ -78,6 +78,74 @@ def check_ensemble_rollout():
     print(f"Ensemble rollout passed: {samples} samples on {len(devices)} CPU devices")
 
 
+def check_postprocessing():
+    """Write input files, run postprocessing, and verify the CF output files."""
+    import pandas as pd
+    from gencast_fp.postprocess.gencast_cf import run_postprocess_multiday
+
+    reference = pd.Timestamp("2025-01-02T12:00:00")
+    for representation in ("numeric", "hours", "minutes", "timedelta", "datetime"):
+        for ensemble_mean in (True, False):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                geos, predictions, output = root / "geos", root / "predictions", root / "output"
+                geos.mkdir()
+                predictions.mkdir()
+
+                def fixture(hours, ensemble):
+                    values = np.asarray(hours)
+                    attrs = {}
+                    if representation == "hours":
+                        attrs = {"units": "hours", "dtype": "int64"}
+                    elif representation == "minutes":
+                        values = values * 60
+                        attrs = {"units": "minutes"}
+                    elif representation == "timedelta":
+                        values = values.astype("timedelta64[h]")
+                    elif representation == "datetime":
+                        values = reference.to_datetime64() + values.astype("timedelta64[h]")
+                    ds = xr.Dataset(
+                        {"geopotential": (("batch", "time", "level", "lat", "lon"),
+                                          np.full((1, 2, 2, 2, 2), 100. * 9.80665))},
+                        coords={"batch": [0], "time": ("time", values, attrs),
+                                "level": [500., 1000.], "lat": [1., 0.], "lon": [0., 180.]},
+                    )
+                    if ensemble:
+                        ds = xr.concat([ds, ds * 3], dim=xr.IndexVariable("sample", [0, 1]))
+                    return ds
+
+                fixture([-12, 0], False).to_netcdf(
+                    geos / "gencast-dataset-source-geos_date-2025-01-02T12_test.nc", engine="netcdf4")
+                fixture([12, 24], True).to_netcdf(
+                    predictions / "gencast-dataset-prediction-geos_date-2025-01-02T12_test.nc", engine="netcdf4")
+                run_postprocess_multiday("2025-01-02:12", "2025-01-02:12",
+                                         str(geos), str(predictions), str(output), ensemble_mean)
+                files = sorted(output.rglob("*.nc"))
+                assert len(files) == 4, files
+                for path in files:
+                    is_initial = "initial" in path.name
+                    stamp = path.name.split("geos_date-")[1].split("_res-")[0]
+                    with xr.open_dataset(path, engine="netcdf4") as actual:
+                        np.testing.assert_array_equal(actual.time.values,
+                                                      [np.datetime64(stamp, "ns")])
+                        np.testing.assert_array_equal(actual.lat, [0., 1.])
+                        np.testing.assert_array_equal(actual.lon, [-180., 0.])
+                        np.testing.assert_array_equal(actual.lev, [1000., 500.])
+                        assert "batch" not in actual.dims
+                        if is_initial or ensemble_mean:
+                            assert "ens" not in actual.dims
+                            np.testing.assert_allclose(actual.H, 100. if is_initial else 200.)
+                        else:
+                            np.testing.assert_allclose(actual.H.sel(ens=0), 100.)
+                            np.testing.assert_allclose(actual.H.sel(ens=1), 300.)
+                    with xr.open_dataset(path, decode_cf=False) as raw:
+                        np.testing.assert_array_equal(raw.time, [0.])
+                        assert raw.time.dtype == np.float32
+                stamps = {p.name.split("geos_date-")[1].split("_res-")[0] for p in files}
+                assert stamps == {"2025-01-02T00", "2025-01-02T12", "2025-01-03T00", "2025-01-03T12"}
+    print("Postprocessing passed: numeric, CF-hour/minute, timedelta, and datetime inputs; both ensemble modes")
+
+
 def main():
     for module in (
         "h5py", "h5netcdf", "netCDF4", "scipy", "dask.array", "pandas",
@@ -90,6 +158,7 @@ def main():
     check_netcdf()
     check_regridding()
     check_ensemble_rollout()
+    check_postprocessing()
 
     import jax
     import jax.numpy as jnp

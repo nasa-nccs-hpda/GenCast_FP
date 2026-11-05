@@ -30,7 +30,11 @@ def _open_xr_cf_safe(path: Path) -> xr.Dataset:
             ds[name].encoding.pop("_FillValue", None)
 
     # Now decode CF safely
-    ds = xr.decode_cf(ds, use_cftime=False)
+    ds = xr.decode_cf(
+        ds,
+        decode_times=xr.coders.CFDatetimeCoder(use_cftime=False),
+        decode_timedelta=True,
+    )
     return ds
 
 
@@ -81,7 +85,9 @@ def proc_time_step(
     time_increment = np.int32(120000)
     units = f"hours since {YYYY}-{MM}-{DD} {HH}:00:00"
 
-    ds["time"] = np.float32((ds["time"] - ds["time"]) / np.timedelta64(1, "h"))
+    # Each output contains one valid time and uses that time as its CF origin.
+    # Its offset is zero regardless of whether the input is numeric or temporal.
+    ds = ds.assign_coords(time=("time", np.zeros(ds.sizes["time"], dtype=np.float32)))
     ds.time.attrs = {
         "long_name": "time",
         "units": units,

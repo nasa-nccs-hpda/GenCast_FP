@@ -88,7 +88,9 @@ MPI are installed through conda-forge in the Dockerfile. Image builds run
 `pip check`, application imports, NetCDF round trips, a small regridding operation,
 and a JAX CPU calculation before downloading model weights. They also run a
 two-step ensemble rollout on two virtual CPU devices using a small deterministic
-predictor. JAX and xarray are pinned in `requirements/runtime.txt` to the versions
+predictor, plus postprocessing through NetCDF output for numeric, CF-hour/minute,
+timedelta, and datetime time coordinates in both ensemble modes.
+JAX and xarray are pinned in `requirements/runtime.txt` to the versions
 used for these compatibility checks; this does not validate a full GPU forecast.
 Installed pip versions
 are recorded inside each image at `/opt/gencast-runtime-versions.txt`.
