@@ -3,14 +3,56 @@ name: CI to Dockerhub - Multi-arch
 on:
   release:
     types: [published]  # Trigger only when a release is created
-  workflow_dispatch: # Keep only manual trigger
+  workflow_dispatch: # Build the branch selected in the Run workflow menu
+
+permissions:
+  contents: read
 
 jobs:
+  build-version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      source: ${{ steps.version.outputs.source }}
+      ref: ${{ steps.version.outputs.ref }}
+    steps:
+      - name: Resolve build source and image tag
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          SELECTED_REF: ${{ github.ref }}
+          SELECTED_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ -n "$RELEASE_TAG" ]; then
+            source="$RELEASE_TAG"
+            ref="refs/tags/$RELEASE_TAG"
+            tag="$RELEASE_TAG"
+          else
+            source="$SELECTED_NAME"
+            ref="$SELECTED_REF"
+            # Docker tags cannot contain slashes or other branch-name punctuation.
+            tag="branch-$(printf '%s' "$source" | sed 's/[^a-zA-Z0-9_.-]/-/g' | cut -c1-115)"
+          fi
+          if [[ ! "$tag" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,121}$ ]]; then
+            echo "Invalid Docker image tag: $tag" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "source=$source" >> "$GITHUB_OUTPUT"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Building $ref as $tag"
+
   docker-amd:
+    needs: [build-version]
+    env:
+      GenCastFP_TAG: ${{ needs.build-version.outputs.tag }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.build-version.outputs.ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -42,17 +84,6 @@ jobs:
           sudo apt clean
           docker image prune -a -f
           df -h
-
-      - name: Set build versions
-        id: set_versions
-        env:
-          DEP_REPO: nasa-nccs-hpda/GenCast_FP
-        run: |
-          DEP_TAG=$(curl -s https://api.github.com/repos/${DEP_REPO}/releases/latest | jq -r .tag_name)
-          echo "GenCastFP_TAG=$DEP_TAG" >> $GITHUB_ENV
-          echo "VERSION_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          echo "Using ${DEP_REPO} release tag: $DEP_TAG"
-          echo "Workflow release version: ${GITHUB_REF#refs/tags/}"
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -60,16 +91,22 @@ jobs:
           context: .
           platforms: linux/amd64
           file: ./requirements/Dockerfile
+          pull: true
           push: true
           tags: nasanccs/gencast-fp:${{ env.GenCastFP_TAG }}-amd64
           build-args: |
-            GenCastFP_TAG=${{ env.GenCastFP_TAG }}
+            GenCastFP_TAG=${{ needs.build-version.outputs.source }}
 
   docker-arm:
+    needs: [build-version]
+    env:
+      GenCastFP_TAG: ${{ needs.build-version.outputs.tag }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.build-version.outputs.ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -102,30 +139,22 @@ jobs:
           docker image prune -a -f
           df -h
 
-      - name: Set build versions
-        id: set_versions
-        env:
-          DEP_REPO: nasa-nccs-hpda/GenCast_FP
-        run: |
-          DEP_TAG=$(curl -s https://api.github.com/repos/${DEP_REPO}/releases/latest | jq -r .tag_name)
-          echo "GenCastFP_TAG=$DEP_TAG" >> $GITHUB_ENV
-          echo "VERSION_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          echo "Using ${DEP_REPO} release tag: $DEP_TAG"
-          echo "Workflow release version: ${GITHUB_REF#refs/tags/}"
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/arm64
           file: ./requirements/Dockerfile
+          pull: true
           push: true
           tags: nasanccs/gencast-fp:${{ env.GenCastFP_TAG }}-arm64
           build-args: |
-            GenCastFP_TAG=${{ env.GenCastFP_TAG }}
+            GenCastFP_TAG=${{ needs.build-version.outputs.source }}
 
   manifest:
-    needs: [docker-amd, docker-arm]
+    needs: [build-version, docker-amd, docker-arm]
+    env:
+      GenCastFP_TAG: ${{ needs.build-version.outputs.tag }}
     runs-on: ubuntu-latest
     steps:
       - name: Login to Docker Hub
@@ -133,17 +162,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Set build versions
-        id: set_versions
-        env:
-          DEP_REPO: nasa-nccs-hpda/GenCast_FP
-        run: |
-          DEP_TAG=$(curl -s https://api.github.com/repos/${DEP_REPO}/releases/latest | jq -r .tag_name)
-          echo "GenCastFP_TAG=$DEP_TAG" >> $GITHUB_ENV
-          echo "VERSION_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          echo "Using ${DEP_REPO} release tag: $DEP_TAG"
-          echo "Workflow release version: ${GITHUB_REF#refs/tags/}"
 
       - name: Extract per-platform digests
         run: |

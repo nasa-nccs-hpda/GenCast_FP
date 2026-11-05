@@ -72,13 +72,16 @@ sbatch --partition=gpu_a100 --constraint=rome --ntasks=10 --gres=gpu:1 --mem-per
 
 In the event where you get an error related to a Fortran library not
 being available, you will need to run the following command to add the
-compiled Cython binary to your path where you are making your code modifications.
+compiled Fortran extension to your path where you are making your code modifications.
 
 ```bash
-singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm --env PYTHONPATH="/discover/nobackup/myusername/GenCast_FP" /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest cp /opt/GenCast_FP/gencast_fp/preprocess/eta2xprs_.cpython-310-x86_64-linux-gnu.so /discover/nobackup/myusername/GenCast_FP/gencast_fp/preprocess
+singularity exec --nv -B $NOBACKUP,/css,/gpfsm/dmd/css,/nfs3m,/gpfsm --env PYTHONPATH="/discover/nobackup/myusername/GenCast_FP" /discover/nobackup/projects/QEFM/containers/gencast-fp-containers/gencast-fp-latest sh -c 'cp /opt/GenCast_FP/gencast_fp/preprocess/eta2xprs_*.so /discover/nobackup/myusername/GenCast_FP/gencast_fp/preprocess/'
 ```
 
 ## Dependencies
+
+The container uses Python 3.12 on Debian Bookworm for both AMD64 and ARM64.
+The Fortran extension is compiled with NumPy F2PY and Meson inside the micromamba environment.
 
 Additional details and flexibility of the commands are listed below.
 A container has been made available here:

@@ -1,4 +1,6 @@
-FROM python:3.10-slim-bullseye
+ARG PYTHON_VERSION=3.12
+FROM python:${PYTHON_VERSION}-slim-bookworm
+ARG PYTHON_VERSION
 LABEL maintainer="glenn.s.tamkin@nasa.gov"
 
 # --- base tools ---
@@ -34,8 +36,8 @@ ENV MAMBA_ROOT_PREFIX=/opt/micromamba
 
 # Create env with things pip struggles with + compilers
 RUN /usr/local/bin/micromamba create -y -n esmf -c conda-forge \
-      python=3.10 esmpy xesmf libnetcdf openmpi mpi4py \
-      fortran-compiler c-compiler && \
+      python=${PYTHON_VERSION} pip esmpy xesmf libnetcdf openmpi mpi4py \
+      fortran-compiler c-compiler meson ninja && \
     /usr/local/bin/micromamba clean -a -y
 
 # Make that env the default at runtime
@@ -46,8 +48,14 @@ ENV LD_LIBRARY_PATH=/opt/micromamba/envs/esmf/lib
 RUN python -c "import sys; print('Using Python:', sys.executable)"
 RUN python -m pip install --no-cache-dir --upgrade numpy
 
-# GraphCast / JAX / IO deps
-RUN python -m pip install --no-cache-dir https://github.com/deepmind/graphcast/archive/master.zip
+# Clone the selected source before installing its bundled GraphCast package.
+ARG REPO_URL="https://github.com/nasa-nccs-hpda/GenCast_FP.git"
+ARG GenCastFP_TAG="main"
+WORKDIR /opt/GenCast_FP
+RUN git clone --depth 1 --branch ${GenCastFP_TAG} ${REPO_URL} /opt/GenCast_FP
+
+# Upstream master now installs WeatherNext rather than the graphcast namespace.
+RUN python -m pip install --no-cache-dir ./gencast_fp/prediction/FMGenCast/graphcast
 RUN python -m pip install --no-cache-dir --upgrade "jax[cuda12]"
 RUN python -m pip install --no-cache-dir --upgrade xarray netCDF4 h5netcdf IPython
 
@@ -55,23 +63,33 @@ RUN python -m pip install --no-cache-dir --upgrade xarray netCDF4 h5netcdf IPyth
 RUN python -m pip install --no-cache-dir --upgrade huggingface_hub hf_transfer
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
-# --- Clone your repo and compile the Fortran extension ---
-ARG REPO_URL="https://github.com/nasa-nccs-hpda/GenCast_FP.git"
-ARG GenCastFP_TAG="main"
-WORKDIR /opt/GenCast_FP
-RUN git clone --depth 1 --branch ${GenCastFP_TAG} ${REPO_URL} /opt/GenCast_FP
-
+# --- Compile the Fortran extension ---
 WORKDIR /opt/GenCast_FP/gencast_fp/preprocess
 RUN python -c "import numpy as _; print('NumPy:', _.__version__)" && \
-    python -m numpy.f2py -c -m eta2xprs_ eta2xprs.F90 only: eta2xprs
+    /usr/local/bin/micromamba run -n esmf \
+      python -m numpy.f2py -c --backend meson -m eta2xprs_ eta2xprs.F90 only: eta2xprs :
 
 # Sanity check the extension
 ENV PYTHONPATH=/opt/GenCast_FP
 RUN python - <<'PY'
 import importlib
+import numpy as np
 m = importlib.import_module("gencast_fp.preprocess.eta2xprs_")
+# Interpolating a constant field must preserve its value on both architectures.
+result = m.eta2xprs(
+    np.full((2, 2, 4), 7.0, order="F"),
+    np.array([10000., 30000., 60000., 90000.]), np.zeros(4),
+    np.full((2, 2), 100000.), np.full((2, 2), 280.), np.zeros((2, 2)),
+    np.array([400., 700.]), 0, 0, 1, -9999.,
+)
+assert result.shape == (2, 2, 2)
+np.testing.assert_allclose(result, 7.0)
 print("Built extension OK:", m.__name__)
 PY
+
+# Check prediction imports and CLI startup before downloading model weights.
+# Build runners do not need an NVIDIA GPU for this check.
+RUN JAX_PLATFORMS=cpu python /opt/GenCast_FP/gencast_fp/view/gencast_fp_cli.py --help
 
 # --- Pull only the `gencast/` folder from qefm-core ---
 ARG HF_QEFM_REPO="nasa-cisto-data-science-group/qefm-core"
