@@ -190,7 +190,9 @@ def _gat2s(template, time, expid='f5295'):
                     replace('%n2',n2).replace('%expid',expid)
 
 
-def discover_files(time, outdir='./', expid='f5295'):
+def discover_files(time, outdir='./', expid='f5295',
+                    sst_dir=None, fp_dirn=None,
+                    e5_dirn=None, e5_dir2=None):
     """
     Return dictionary with FP file names on discover, given time.
         
@@ -208,11 +210,13 @@ def discover_files(time, outdir='./', expid='f5295'):
 
     # ERA-5 and GEOS-FP directories on discover
     # -----------------------------------------
+    # Defaults preserve current behavior; callers may override any of
+    # these (e.g. to point to a local directory) via the function args.
     t, x = time, expid
-    sst_dir = '/gpfsm/dnb07/projects/p10/gmao_ops/fvInput/g5gcm/bcs/realtime/OSTIA_REYNOLDS/2880x1440/'
-    e5_dirn = '/css/era5/static/'
-    e5_dir2 = '/css/era5/surface_hourly/inst/Y%y4/M%m2/'
-    fp_dirn = '/gpfsm/dnb06/projects/p174/%expid_fp/diag/Y%y4/M%m2/'
+    sst_dir = sst_dir or '/gpfsm/dnb07/projects/p10/gmao_ops/fvInput/g5gcm/bcs/realtime/OSTIA_REYNOLDS/2880x1440/'
+    e5_dirn = e5_dirn or '/css/era5/static/'
+    e5_dir2 = e5_dir2 or '/css/era5/surface_hourly/inst/Y%y4/M%m2/'
+    fp_dirn = fp_dirn or '/gpfsm/dnb06/projects/p174/%expid_fp/diag/Y%y4/M%m2/'
 
     F1 = dict(e5_Es = (e5_dirn+'era5_static-allvar.nc'),
               e5_Ex = _gat2s(e5_dir2+'era5_surface-inst_allvar_%y4%m2%d2_%h2z.nc',t,x),
