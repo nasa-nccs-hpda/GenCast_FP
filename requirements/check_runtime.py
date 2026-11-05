@@ -43,6 +43,41 @@ def check_regridding():
     print("ESMF/xESMF regridding check passed")
 
 
+def check_ensemble_rollout():
+    """Run the real sharding/pmap/rollout path with a tiny deterministic model."""
+    import jax
+    from graphcast import rollout, xarray_jax
+
+    devices = jax.local_devices()
+    inputs = xr.Dataset(
+        {"temperature": (("time", "point"), np.array([[0., 1.], [2., 3.]], dtype=np.float32))},
+        coords={"time": np.array([-12, 0], dtype="timedelta64[h]"), "point": [0, 1]},
+    )
+    targets = xr.Dataset(
+        {"temperature": (("time", "point"), np.full((2, 2), np.nan, dtype=np.float32))},
+        coords={"time": np.array([12, 24], dtype="timedelta64[h]"), "point": [0, 1]},
+    )
+    forcings = xr.Dataset(coords={"time": targets.time})
+
+    def predict(rng, inputs, targets_template, forcings):
+        del rng, forcings
+        return targets_template.fillna(0) * 0 + inputs.isel(time=-1, drop=True) + 1
+
+    predictor = xarray_jax.pmap(jax.jit(predict), dim="sample", devices=devices)
+    samples = 2 * len(devices)
+    chunks = list(rollout.chunked_prediction_generator_multiple_runs(
+        predictor_fn=predictor,
+        rngs=np.asarray(jax.random.split(jax.random.PRNGKey(0), samples)),
+        inputs=inputs, targets_template=targets, forcings=forcings,
+        num_samples=samples, pmap_devices=devices, num_steps_per_chunk=1,
+    ))
+    result = xr.combine_by_coords(chunks).temperature.transpose("sample", "time", "point")
+    np.testing.assert_allclose(result, np.broadcast_to([[3., 4.], [4., 5.]], (samples, 2, 2)))
+    np.testing.assert_array_equal(result.sample, np.arange(samples))
+    np.testing.assert_array_equal(result.time, targets.time)
+    print(f"Ensemble rollout passed: {samples} samples on {len(devices)} CPU devices")
+
+
 def main():
     for module in (
         "h5py", "h5netcdf", "netCDF4", "scipy", "dask.array", "pandas",
@@ -54,6 +89,7 @@ def main():
         importlib.import_module(module)
     check_netcdf()
     check_regridding()
+    check_ensemble_rollout()
 
     import jax
     import jax.numpy as jnp

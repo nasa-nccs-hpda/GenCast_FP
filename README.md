@@ -86,7 +86,11 @@ Direct pip dependencies are declared in `requirements/runtime.txt`, including th
 `h5netcdf[h5py]` backend needed for prediction's file-object reads. ESMF/xESMF and
 MPI are installed through conda-forge in the Dockerfile. Image builds run
 `pip check`, application imports, NetCDF round trips, a small regridding operation,
-and a JAX CPU calculation before downloading model weights. Installed pip versions
+and a JAX CPU calculation before downloading model weights. They also run a
+two-step ensemble rollout on two virtual CPU devices using a small deterministic
+predictor. JAX and xarray are pinned in `requirements/runtime.txt` to the versions
+used for these compatibility checks; this does not validate a full GPU forecast.
+Installed pip versions
 are recorded inside each image at `/opt/gencast-runtime-versions.txt`.
 
 Additional details and flexibility of the commands are listed below.

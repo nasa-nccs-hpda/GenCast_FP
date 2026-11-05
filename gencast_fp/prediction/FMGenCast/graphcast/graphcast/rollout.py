@@ -47,15 +47,17 @@ def _replicate_dataset(
 
   def replicate_variable(variable: xarray.Variable) -> xarray.Variable:
     if replica_dim in variable.dims:
-      # TODO(pricei): call device_put_replicated when replicate_to_device==True
       return variable.transpose(replica_dim, ...)
     else:
       data = len(devices) * [variable.data]
       if replicate_to_device:
         assert devices is not None
-        # TODO(pricei): Refactor code to use "device_put_replicated" instead of
-        # device_put_sharded.
-        data = jax.device_put_sharded(data, devices)
+        # Preserve the leading sample axis expected by xarray_jax.pmap.
+        # device_put_sharded was removed from newer JAX releases.
+        mesh = jax.sharding.Mesh(np.asarray(devices), (replica_dim,))
+        sharding = jax.sharding.NamedSharding(
+            mesh, jax.sharding.PartitionSpec(replica_dim))
+        data = jax.device_put(np.stack(data, axis=0), sharding)
       else:
         data = np.stack(data, axis=0)
       return xarray_jax.Variable(
@@ -276,9 +278,9 @@ def chunked_prediction_generator(
   """
 
   # Create copies to avoid mutating inputs.
-  inputs = xarray.Dataset(inputs)
-  targets_template = xarray.Dataset(targets_template)
-  forcings = xarray.Dataset(forcings)
+  inputs = inputs.copy(deep=False)
+  targets_template = targets_template.copy(deep=False)
+  forcings = forcings.copy(deep=False) if forcings is not None else xarray.Dataset()
 
   if "datetime" in inputs.coords:
     del inputs.coords["datetime"]

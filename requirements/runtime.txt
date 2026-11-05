@@ -3,10 +3,11 @@
 # GraphCast and its dependencies are installed from the bundled source.
 numpy
 pandas
-xarray
+# Versions exercised by the bundled GraphCast ensemble rollout check.
+xarray==2026.9.0
 dask[array]
 dm-haiku
-jax[cuda12]
+jax[cuda12]==0.12.0.1
 netCDF4
 h5netcdf[h5py]
 IPython

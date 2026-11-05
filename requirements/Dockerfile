@@ -90,7 +90,8 @@ PY
 # Check prediction imports and CLI startup before downloading model weights.
 # Build runners do not need an NVIDIA GPU for this check.
 COPY requirements/check_runtime.py /opt/check_gencast_runtime.py
-RUN JAX_PLATFORMS=cpu python /opt/check_gencast_runtime.py
+RUN JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
+    python /opt/check_gencast_runtime.py
 RUN JAX_PLATFORMS=cpu python /opt/GenCast_FP/gencast_fp/view/gencast_fp_cli.py --help
 
 # --- Pull only the `gencast/` folder from qefm-core ---
